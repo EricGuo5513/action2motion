@@ -1,0 +1,177 @@
+[W 13:57:16.450 NotebookApp] Collisions detected in /home/chuan/.jupyter/jupyter_notebook_config.py and /home/chuan/.jupyter/jupyter_notebook_config.json config files. /home/chuan/.jupyter/jupyter_notebook_config.json has higher priority: {
+      "NotebookApp": {
+        "password": "'sha1:35ffd53cb5e8:2b1597539e9f5233125b5fb6a60299f2af2d7687' ignored, using 'sha1:1d47143ae5a5:bebc700fe30638fdf22e7e641edb65e6ca10cc41'"
+      }
+    }
+[I 13:57:17.129 NotebookApp] [nb_conda_kernels] enabled, 3 kernels found
+[W 13:57:17.482 NotebookApp] WARNING: The notebook server is listening on all IP addresses and not using encryption. This is not recommended.
+[I 13:57:17.500 NotebookApp] JupyterLab alpha preview extension loaded from /home/chuan/anaconda3/lib/python3.6/site-packages/jupyterlab
+JupyterLab v0.27.0
+Known labextensions:
+[I 13:57:17.501 NotebookApp] Running the core application with no additional extensions or settings
+[I 13:57:17.502 NotebookApp] Serving notebooks from local directory: /home/chuan/language2pose/action2pose/handson
+[I 13:57:17.502 NotebookApp] 0 active kernels 
+[I 13:57:17.502 NotebookApp] The Jupyter Notebook is running at: http://[all ip addresses on your system]:40345/
+[I 13:57:17.502 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[W 13:57:21.059 NotebookApp] 404 GET /api/kernels/d9436dc9-f251-4347-8ac7-268feb524422/channels?session_id=BDAAC102625948E589D26B146DDEA9E7 (142.244.63.81): Kernel does not exist: d9436dc9-f251-4347-8ac7-268feb524422
+[W 13:57:21.087 NotebookApp] 404 GET /api/kernels/d9436dc9-f251-4347-8ac7-268feb524422/channels?session_id=BDAAC102625948E589D26B146DDEA9E7 (142.244.63.81) 57.22ms referer=None
+[W 13:57:22.034 NotebookApp] 404 GET /api/kernels/a1cfc198-1a94-432e-a6c6-e309012472f9/channels?session_id=F6A6A9C739A248DD8B162B4A2BE77A2A (142.244.63.81): Kernel does not exist: a1cfc198-1a94-432e-a6c6-e309012472f9
+[W 13:57:22.036 NotebookApp] 404 GET /api/kernels/a1cfc198-1a94-432e-a6c6-e309012472f9/channels?session_id=F6A6A9C739A248DD8B162B4A2BE77A2A (142.244.63.81) 4.50ms referer=None
+[W 13:57:24.057 NotebookApp] 404 GET /notebooks/language2pose/action2pose/handson/Untitled.ipynb?kernel_name=tensorflow (142.244.63.81): No such file or directory: language2pose/action2pose/handson/Untitled.ipynb
+[W 13:57:24.059 NotebookApp] 404 GET /notebooks/language2pose/action2pose/handson/Untitled.ipynb?kernel_name=tensorflow (142.244.63.81) 2.64ms referer=None
+[W 13:57:25.312 NotebookApp] 404 GET /notebooks/language2pose/action2pose/handson/Untitled.ipynb?kernel_name=tensorflow (142.244.63.81): No such file or directory: language2pose/action2pose/handson/Untitled.ipynb
+[W 13:57:25.313 NotebookApp] 404 GET /notebooks/language2pose/action2pose/handson/Untitled.ipynb?kernel_name=tensorflow (142.244.63.81) 2.48ms referer=None
+[I 13:57:30.007 NotebookApp] 302 GET / (142.244.63.81) 0.79ms
+[I 13:57:39.131 NotebookApp] Kernel started: b29405cd-0596-448f-8d7e-67c4e3f4da5f
+[I 13:57:39.490 NotebookApp] Adapting to protocol v5.3 for kernel b29405cd-0596-448f-8d7e-67c4e3f4da5f
+[I 13:57:44.984 NotebookApp] Kernel shutdown: b29405cd-0596-448f-8d7e-67c4e3f4da5f
+[I 13:57:45.007 NotebookApp] Kernel started: 94a200e2-57a6-475a-9153-26599e178409
+[I 13:57:45.734 NotebookApp] Adapting to protocol v5.1 for kernel 94a200e2-57a6-475a-9153-26599e178409
+[W 13:57:54.063 NotebookApp] Replacing stale connection: d9436dc9-f251-4347-8ac7-268feb524422:BDAAC102625948E589D26B146DDEA9E7
+[I 13:59:39.125 NotebookApp] Saving file at /Untitled.ipynb
+[I 14:01:39.116 NotebookApp] Saving file at /Untitled.ipynb
+[W 14:01:53.730 NotebookApp] 404 GET /notebooks/language2pose/action2pose/handson/data-preprocess.ipynb (142.244.63.81): No such file or directory: language2pose/action2pose/handson/data-preprocess.ipynb
+[W 14:01:53.732 NotebookApp] 404 GET /notebooks/language2pose/action2pose/handson/data-preprocess.ipynb (142.244.63.81) 3.03ms referer=http://142.244.63.191:40345/notebooks/language2pose/action2pose/handson/Untitled.ipynb?kernel_name=tensorflow
+[W 14:01:54.073 NotebookApp] Replacing stale connection: a1cfc198-1a94-432e-a6c6-e309012472f9:F6A6A9C739A248DD8B162B4A2BE77A2A
+[W 14:01:55.857 NotebookApp] 404 GET /notebooks/language2pose/action2pose/handson/data-preprocess.ipynb (142.244.63.81): No such file or directory: language2pose/action2pose/handson/data-preprocess.ipynb
+[W 14:01:55.859 NotebookApp] 404 GET /notebooks/language2pose/action2pose/handson/data-preprocess.ipynb (142.244.63.81) 2.63ms referer=None
+[W 14:01:57.889 NotebookApp] 404 GET /notebooks/language2pose/action2pose/handson/data-preprocess.ipynb (142.244.63.81): No such file or directory: language2pose/action2pose/handson/data-preprocess.ipynb
+[W 14:01:57.891 NotebookApp] 404 GET /notebooks/language2pose/action2pose/handson/data-preprocess.ipynb (142.244.63.81) 2.60ms referer=None
+[I 14:02:06.726 NotebookApp] Kernel started: e09587b7-52be-47d1-a50a-bef131270c71
+[I 14:02:07.062 NotebookApp] Adapting to protocol v5.3 for kernel e09587b7-52be-47d1-a50a-bef131270c71
+[I 14:02:11.973 NotebookApp] Kernel shutdown: e09587b7-52be-47d1-a50a-bef131270c71
+[I 14:02:12.000 NotebookApp] Kernel started: dbd84e69-e9ea-4472-8324-3141694616f0
+[I 14:02:12.524 NotebookApp] Adapting to protocol v5.1 for kernel dbd84e69-e9ea-4472-8324-3141694616f0
+[I 14:04:06.732 NotebookApp] Saving file at /data-preprocess.ipynb
+[I 14:06:06.741 NotebookApp] Saving file at /data-preprocess.ipynb
+[I 14:08:06.739 NotebookApp] Saving file at /data-preprocess.ipynb
+[I 14:10:06.720 NotebookApp] Saving file at /data-preprocess.ipynb
+[I 14:12:06.739 NotebookApp] Saving file at /data-preprocess.ipynb
+[I 14:14:06.734 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:16:06.723 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:18:06.715 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:20:06.717 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:22:06.723 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:24:06.719 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:26:06.718 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:28:06.710 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:30:06.716 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:32:06.713 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:34:06.701 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:36:07.010 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:44:06.718 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:46:07.017 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:50:06.715 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:52:06.707 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:53:51.592 NotebookApp] Kernel interrupted: dbd84e69-e9ea-4472-8324-3141694616f0
+[I 14:54:06.716 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:56:06.992 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 14:58:06.996 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:00:06.999 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:02:06.701 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:04:06.694 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:06:06.704 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:08:06.705 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:10:06.698 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:12:06.698 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:14:06.692 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:16:06.687 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:18:06.693 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:20:06.690 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:22:06.688 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:24:06.689 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:26:06.685 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:28:06.685 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:30:06.681 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:32:06.682 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:33:11.109 NotebookApp] Adapting to protocol v5.1 for kernel 94a200e2-57a6-475a-9153-26599e178409
+[I 15:34:06.975 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 15:36:06.982 NotebookApp] Saving file at /nameGenerator.ipynb
+[I 16:17:11.028 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:37:11.016 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:39:11.014 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:41:11.011 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:43:11.005 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:45:11.007 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:47:11.009 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:49:11.008 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:51:11.006 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:53:10.994 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:55:11.004 NotebookApp] Saving file at /Untitled.ipynb
+[I 16:59:11.001 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:01:10.999 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:03:10.989 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:05:11.009 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:06:57.389 NotebookApp] Kernel restarted: 94a200e2-57a6-475a-9153-26599e178409
+[I 17:06:57.905 NotebookApp] Adapting to protocol v5.1 for kernel 94a200e2-57a6-475a-9153-26599e178409
+[I 17:07:10.996 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:09:10.996 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:23:10.983 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:25:10.984 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:27:10.982 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:31:10.981 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:33:10.970 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:35:10.968 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:37:10.979 NotebookApp] Saving file at /Untitled.ipynb
+[I 17:53:10.972 NotebookApp] Saving file at /Untitled.ipynb
+[I 18:03:10.961 NotebookApp] Saving file at /Untitled.ipynb
+[I 18:05:10.952 NotebookApp] Saving file at /Untitled.ipynb
+[I 18:07:10.970 NotebookApp] Saving file at /Untitled.ipynb
+[I 18:09:10.966 NotebookApp] Saving file at /Untitled.ipynb
+[I 18:11:10.944 NotebookApp] Saving file at /Untitled.ipynb
+[I 18:13:10.952 NotebookApp] Saving file at /Untitled.ipynb
+[I 18:21:10.940 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:23:10.940 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:25:10.943 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:27:10.939 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:29:11.866 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:31:10.930 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:33:10.954 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:35:10.953 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:37:10.946 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:39:10.939 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:41:10.941 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:43:10.947 NotebookApp] Saving file at /translationHandson.ipynb
+[I 18:45:10.934 NotebookApp] Saving file at /translationHandson.ipynb
+[I 19:01:10.929 NotebookApp] Saving file at /translationHandson.ipynb
+[I 09:59:10.317 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:01:10.304 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:03:10.307 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:05:10.314 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:09:10.312 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:11:10.308 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:13:10.296 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:15:10.307 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:17:10.303 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:19:10.303 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:23:10.297 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:27:10.298 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:29:10.292 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:31:10.286 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:33:10.284 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:35:10.281 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:37:10.279 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:39:10.299 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:41:10.290 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:43:10.274 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:45:10.287 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:47:10.294 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:51:10.280 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:53:10.270 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:55:10.283 NotebookApp] Saving file at /translationHandson.ipynb
+[I 10:59:10.283 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:01:10.278 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:03:11.177 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:05:11.201 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:09:11.178 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:11:11.175 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:13:11.192 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:17:11.173 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:19:11.195 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:21:11.179 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:23:10.255 NotebookApp] Saving file at /translationHandson.ipynb
+[I 11:25:10.257 NotebookApp] Saving file at /translationHandson.ipynb
+[I 14:31:10.153 NotebookApp] Saving file at /translationHandson.ipynb
+[I 14:33:10.144 NotebookApp] Saving file at /translationHandson.ipynb
+[I 14:35:10.150 NotebookApp] Saving file at /translationHandson.ipynb
+[I 14:39:10.126 NotebookApp] Saving file at /translationHandson.ipynb
