@@ -64,6 +64,7 @@ class MotionFolderDatasetShihao(data.Dataset):
         label = self.label_enc[label]
         return pose_mat, label
 
+
 class MotionFolderDatasetMocap(data.Dataset):
     def __init__(self, filename, datapath, opt, do_offset=True):
         self.clip = pd.read_csv(filename, index_col=False).dropna(how='all').dropna(axis=1, how='all')
@@ -120,6 +121,7 @@ class MotionFolderDatasetMocap(data.Dataset):
         pose_mat, label = self.data[index]
         label = self.label_enc[label]
         return pose_mat, label
+
 
 class MotionFolderDatasetShihaoV2(data.Dataset):
     def __init__(self, filename, datapath, pkl_path, opt, lie_enforce, do_offset=True, raw_offsets=None, kinematic_chain=None):
@@ -262,6 +264,80 @@ class MotionFolderDatasetNTU(data.Dataset):
         pose_mat, label = self.data[item]
         en_label = self.label_enc[label]
         return pose_mat, en_label
+
+
+class MotionFolderDatasetHumanAct13(data.Dataset):
+    def __init__(self, datapath, opt, lie_enforce, do_offset=True, raw_offsets=None, kinematic_chain=None):
+        self.datapath = datapath
+        self.do_offset = do_offset
+        self.lengths = []
+        self.data = []
+        self.labels = []
+        self.opt = opt
+        data_list = os.listdir(datapath)
+
+        if lie_enforce:
+            raw_offsets = torch.from_numpy(raw_offsets)
+            self.lie_skeleton = LieSkeleton(raw_offsets, kinematic_chain, torch.DoubleTensor)
+
+        for file_name in data_list:
+            full_path = os.path.join(self.datapath, file_name)
+            pose_raw = np.load(full_path)
+
+            if do_offset:
+                # get the offset and return the final pose
+                # print(pose_raw.shape)
+                # print(pose_raw[0, 0].shape)
+                offset_mat = np.tile(pose_raw[0, 0], (pose_raw.shape[1], 1))
+                pose_mat = pose_raw - offset_mat
+            else:
+                pose_mat = pose_raw
+
+            if lie_enforce and opt.isTrain:
+                # the first column of lie_params is zeros
+                # dim (motion_len, joints_num, 3)
+                pose_mat = torch.from_numpy(pose_mat)
+                lie_params = self.lie_skeleton.inverse_kinemetics(pose_mat).numpy()
+                # use the first column to store root translation information
+                pose_mat = np.concatenate((np.expand_dims(pose_mat[:, 0, :], axis=1)
+                                           , lie_params[:, 1:, :])
+                                           , axis=1)
+
+            pose_mat = pose_mat.reshape((-1, 24 * 3))
+
+            if self.opt.no_trajectory:
+                # for lie params, just exclude the root translation part
+                if self.opt.lie_enforce:
+                    pose_mat = pose_mat[:, 3:]
+                else:
+                    offset = np.tile(pose_mat[..., :3], (1, int(pose_mat.shape[1] / 3)))
+                    pose_mat = pose_mat - offset
+
+            label = file_name[file_name.find('A') + 1: file_name.find('.')]
+            if opt.coarse_grained:
+                label = label[:2]
+            if label not in self.labels:
+                self.labels.append(label)
+            self.data.append((pose_mat, label))
+            self.lengths.append(pose_mat.shape[0])
+        self.cumsum = np.cumsum([0] + self.lengths)
+        print("Total number of frames {}, videos {}, action types {}".format(self.cumsum[-1], len(data_list), len(self.labels)))
+        self.label_enc = dict(zip(self.labels, np.arange(len(self.labels))))
+        self.label_enc_rev = dict(zip(np.arange(len(self.labels)), self.labels))
+        with codecs.open(os.path.join(opt.save_root, "label_enc_rev_humanact13.txt"), 'w', 'utf-8') as f:
+            for item in self.label_enc_rev.items():
+                f.write(str(item) + "\n")
+
+    def __len__(self):
+        return len(self.data)
+
+    def get_label_reverse(self, enc_label):
+        return self.label_enc_rev.get(enc_label)
+
+    def __getitem__(self, index):
+        pose_mat, label = self.data[index]
+        label = self.label_enc[label]
+        return pose_mat, label
 
 
 class MotionFolderDatasetNtuVIBE(data.Dataset):
