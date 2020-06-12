@@ -11,6 +11,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--do_adversary', action='store_true', help='Enable adversary motion discriminator')
         self.parser.add_argument('--do_recognition', action='store_true', help='Enable action recognition motion classifier')
         self.parser.add_argument('--do_align', action='store_true', help='Calculate align loss')
+        self.parser.add_argument('--do_trajec_align', action='store_true', help='Calculate trajectory align loss')
 
         self.parser.add_argument('--use_geo_loss', action='store_true', help='Calculate align loss')
         self.parser.add_argument('--lambda_trajec', type=float, default=0.8, help='Calculate align loss')
@@ -22,6 +23,11 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--lambda_align', type=float, default=0.5, help='Weight of align loss')
         self.parser.add_argument('--lambda_adversary', type=float, default=0.5, help='Weight of adversary loss')
         self.parser.add_argument('--lambda_recognition', type=float, default=0.5, help='Weight of recognition loss')
+
+        self.parser.add_argument('--do_kld_schedule', action='store_true', help='Activate KLD scheduler')
+        self.parser.add_argument('--start_increase_iter', type=int, default=0, help='From which iteration we '
+                                                                                      'start increase kld weight')
+        self.parser.add_argument('--end_lambda_kld', type=float, default=0.01, help='Termination of kld weight while scheduling')
 
         self.parser.add_argument('--is_continue', action="store_true", help='Enable continue training')
         self.parser.add_argument('--iters', type=int, default=20, help='Training iterations')

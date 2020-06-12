@@ -73,7 +73,7 @@ class DecoderGRU(nn.Module):
             h_in = self.hidden[i]
         return self.output(h_in), h_in
 
-
+# generator with Lie algbra parameters, root joint has no rotations
 class DecoderGRULie(DecoderGRU):
     def __init__(self, input_size, output_size, hidden_size, n_layers, batch_size, device):
         super(DecoderGRULie, self).__init__(input_size,
@@ -94,3 +94,30 @@ class DecoderGRULie(DecoderGRU):
         lie_out = torch.tanh(lie_out) * self.PI
         output = torch.cat((root_trans, lie_out), dim=-1)
         return output, h_mid
+
+
+# generator with Lie algbra parameter, root joint has rotations,
+# and velocity preserve unit
+class DecoderGRULieV2(DecoderGRU):
+    def __init__(self, input_size, output_size, hidden_size, n_layers, batch_size, device):
+        super(DecoderGRULieV2, self).__init__(input_size,
+                                            output_size,
+                                            hidden_size,
+                                            n_layers,
+                                            batch_size,
+                                            device)
+        self.output_lie = nn.Linear(output_size, output_size)
+        self.vel_unit = nn.Linear(output_size, 10)
+        self.PI = 3.1415926
+
+    def forward(self, inputs):
+        hidden_output, h_mid = super(DecoderGRULieV2, self).forward(inputs)
+
+        hidden_in = torch.tanh(hidden_output)
+
+        lie_out = self.output_lie(hidden_in)
+        lie_out = torch.tanh(lie_out) * self.PI
+
+        vel_out = self.vel_unit(hidden_in)
+        vel_out = torch.tanh(vel_out)
+        return lie_out, vel_out, h_mid

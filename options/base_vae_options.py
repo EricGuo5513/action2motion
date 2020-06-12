@@ -32,6 +32,11 @@ class BaseOptions():
         self.parser.add_argument('--decoder_hidden_layers', type=int, default=2, help='Layers of GRU in decoder net')
         self.parser.add_argument('--d_hidden_layers', type=int, default=2, help='Layers of GRU in discriminators')
 
+        self.parser.add_argument('--use_velocity', action="store_true", help="Use velocity estimation network")
+        self.parser.add_argument('--use_vel_S', action="store_true", help="Use simple velocity estimation network")
+
+        self.parser.add_argument('--epoch_size', type=int, help="epoch_size of training velocity estimation network")
+
         self.initialized = True
 
     def parse(self):

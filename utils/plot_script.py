@@ -117,27 +117,9 @@ def plot_3d_pose(pose, body_entity, save_path=None):
     plt.close()
 
 
-def print_current_loss(start_time, niter_state, total_niters, losses):
 
-    def as_minutes(s):
-        m = math.floor(s / 60)
-        s -= m * 60
-        return '%dm %ds' % (m, s)
 
-    def time_since(since, percent):
-        now = time.time()
-        s = now - since
-        es = s / percent
-        rs = es - s
-        return '%s (- %s)' % (as_minutes(s), as_minutes(rs))
-
-    message = '%s niter:%d completed: %d%%)' % (time_since(start_time, niter_state / total_niters),
-                                                niter_state, niter_state / total_niters * 100)
-    for k, v in losses.items():
-        message += ' %s: %.3f ' % (k, v)
-    print(message)
-
-def plot(savePath, joints):
+def plot_3d_pose_v2(savePath, kinematic_tree, joints):
     figure = plt.figure()
     # ax = plt.axes(xlim=(-1, 1), ylim=(-1, 1), zlim=(-1, 1), projection='3d')
     ax = Axes3D(figure)
@@ -157,6 +139,7 @@ def plot(savePath, joints):
     ax.set_yticklabels([])
     ax.set_zticklabels([])
     plt.savefig(savePath)
+
 
 def plot_3d_motion_v2(motion, kinematic_tree, save_path, interval=50):
     matplotlib.use('Agg')
@@ -201,6 +184,79 @@ def plot_3d_motion_v2(motion, kinematic_tree, save_path, interval=50):
     # writer = Writer(fps=15, metadata={})
     ani.save(save_path, writer='pillow')
     plt.close()
+
+def plot_3d_motion_with_trajec(motion, kinematic_tree, save_path, interval=50, trajec1=None, trajec2=None):
+    matplotlib.use('Agg')
+
+    def init():
+        # ax.set_xlabel('x')
+        # ax.set_ylabel('y')
+        # ax.set_zlabel('z')
+        ax.set_ylim(-1, 1)
+        ax.set_xlim(-1, 1)
+        ax.set_zlim(-1, 1)
+        # ax.set_ylim(-1.0, 0.2)
+        # ax.set_xlim(-0.2, 1.0)
+        # ax.set_zlim(-1.0, 0.4)
+
+    fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+    ax = p3.Axes3D(fig)
+    init()
+
+    data = np.array(motion, dtype=float)
+    colors = ['red', 'magenta', 'black', 'magenta', 'black', 'green', 'blue']
+    frame_number = data.shape[0]
+    # dim (frame, joints, xyz)
+    print(data.shape)
+
+    def update(index):
+        ax.lines = []
+        ax.collections = []
+        ax.view_init(elev=110, azim=90)
+        if trajec1 is not None:
+            ax.plot3D(trajec1[:, 0], trajec1[:, 1], trajec1[:, 2], linewidth=2.0, color='green')
+        if trajec2 is not None:
+            ax.plot3D(trajec2[:, 0], trajec2[:, 1], trajec2[:, 2], linewidth=2.0, color='blue')
+        for chain, color in zip(kinematic_tree, colors):
+            ax.plot3D(motion[index, chain, 0], motion[index, chain, 1], motion[index, chain, 2], linewidth=4.0, color=color)
+        # plt.axis('off')
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_zticklabels([])
+
+    ani = FuncAnimation(fig, update, frames=frame_number, interval=interval, repeat=False, repeat_delay=200)
+    # update(1)
+    # plt.show()
+    # Writer = writers['ffmpeg']
+    # writer = Writer(fps=15, metadata={})
+    ani.save(save_path, writer='pillow')
+    plt.close()
+
+def plot_3d_trajectory(data, save_path, ground=None):
+    matplotlib.use('Agg')
+
+    def init():
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+        ax.set_ylim(-1, 1)
+        ax.set_xlim(-1, 1)
+        ax.set_zlim(-1, 1)
+        # ax.set_ylim(-1.0, 0.2)
+        # ax.set_xlim(-0.2, 1.0)
+        # ax.set_zlim(-1.0, 0.4)
+
+    fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+    ax = p3.Axes3D(fig)
+    init()
+    colors = ['red', 'magenta', 'black', 'green', 'blue']
+    ax.plot3D(data[:, 0], data[:, 1], data[:, 2], linewidth=2.0, color='red')
+    if ground is not None:
+        ax.plot3D(ground[:, 0], ground[:, 1], ground[:, 2], linewidth=2.0, color='blue')
+    plt.savefig(save_path)
+
 
 
 def plot_3d_motion(motion, pose_tree, class_type, save_path, interval=300, excluded_joints=None):

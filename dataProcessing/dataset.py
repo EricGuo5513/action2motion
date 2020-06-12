@@ -464,12 +464,22 @@ class MotionDataset(data.Dataset):
     def __len__(self):
         return len(self.dataset)
         
-# Generators for dataset
-# training_set = Dataset(partition['train'], labels)
-# training_generator = data.DataLoader(training_set, **params)
 
-# validation_set = Dataset(partition['validation'], labels)
-# validation_generator = data.DataLoader(validation_set, **params)
+class PairFrameDataset(data.Dataset):
+    def __init__(self, dataset):
+        self.dataset = dataset
 
-# pd = PoseDataset("../dataset/pose_clip.csv", "../dataset/pose/")
-# print(pd.__getitem__(3))
+    def __getitem__(self, item):
+        if item != 0:
+            motion_id = np.searchsorted(self.dataset.cumsum, item) - 1
+            pose_num = item - self.dataset.cumsum[motion_id] - 1
+        else:
+            motion_id = 0
+            pose_num = 0
+        motion, label = self.dataset[motion_id]
+        pose1 = motion[pose_num]
+        pose2 = motion[pose_num + 1] if pose_num != motion.shape[0]-1 else motion[pose_num]
+        return pose1, pose2, label
+
+    def __len__(self):
+        return self.dataset.cumsum[-1]

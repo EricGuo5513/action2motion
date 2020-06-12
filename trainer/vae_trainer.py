@@ -8,10 +8,11 @@ import random
 from collections import OrderedDict
 from models.motion_gan import *
 from utils.plot_script import *
+from utils.utils_ import *
 from lie.pose_lie import *
 from lie.lie_util import *
 from utils.paramUtil import *
-
+from models.networks import *
 
 
 class FakeMotionPool(object):
@@ -72,6 +73,13 @@ class Trainer(object):
 
     def zeros_like(self, t, val=0):
         return torch.Tensor(t.size()).fill_(val).requires_grad_(False).to(self.device)
+
+    def kld_weight_scheduler(self, iter_state, start_weight):
+        intervals = (self.opt.iters - self.opt.start_increase_iter) / self.opt.update_interval
+        increase_rate = (self.opt.end_lambda_kld - start_weight) / intervals
+        if iter_state > self.opt.start_increase_iter:
+            self.opt.lambda_kld += increase_rate
+            # print("Current KLD weight: %.5f" % (self.opt.lambda_kld))
 
     def tensor_fill(self, tensor_size, val=0):
         return torch.zeros(tensor_size).fill_(val).requires_grad_(False).to(self.device)
@@ -219,13 +227,7 @@ class Trainer(object):
         log_dict['g_kld_loss'] = kld.item() / opt_step_cnt
         losses = mse + kld * self.opt.lambda_kld
         generate_batch = torch.cat(generate_batch, dim=1)
-        # print(generate_batch[0, 0], data[0, 0])
-        # print(generate_batch[0, 1], data[0, 1])
-        # print(logvar1_str)
-        # print(mu1_str)
-        # print(z_str)
-        # print(logvar2_str)
-        # print(mu2_str)
+
         if self.opt.do_align:
             losses += align * self.opt.lambda_align
             log_dict['g_align_loss'] = align.item() / opt_step_cnt
@@ -427,7 +429,7 @@ class Trainer(object):
                 break
         return logs
 
-
+# trainning with lie algebra paramters
 class TrainerLie(Trainer):
     def __init__(self, motion_sampler, opt, device, raw_offsets, kinematic_chain):
         super(TrainerLie, self).__init__(motion_sampler,
@@ -545,6 +547,7 @@ class TrainerLie(Trainer):
 
         return generated_batch.cpu(), classes_to_generate
 
+# Evaluation with variable scale
     def evaluate2(self, prior_net, decoder, num_samples, cate_one_hot=None, real_joints=None):
         generated_batch, classes_to_generate = super(TrainerLie, self).evaluate(
             prior_net, decoder, num_samples, cate_one_hot)
@@ -578,6 +581,7 @@ class TrainerLie(Trainer):
 
         return generated_batch.cpu(), classes_to_generate
 
+# Evaluation with variable bone lengths
     def evaluate3(self, prior_net, decoder, num_samples, cate_one_hot=None, real_joints=None):
         generated_batch, classes_to_generate = super(TrainerLie, self).evaluate(
             prior_net, decoder, num_samples, cate_one_hot)
@@ -596,8 +600,8 @@ class TrainerLie(Trainer):
             leg_indx = kinematic_chains[0] + kinematic_chains[1]
             arm_indx = kinematic_chains[3] + kinematic_chains[4]
             all_indx = [i for i in range(24)]
-            #scale_list = [None, leg_indx, arm_indx, all_indx]
-            scale_list = [None]
+            scale_list = [None, leg_indx, arm_indx, all_indx]
+            # scale_list = [None]
             generated_batch_lie = generated_batch_lie.repeat(batch_size, 1, 1)
             classes_to_generate = np.tile(classes_to_generate, batch_size)
             num_samples = generated_batch_lie.shape[0]
@@ -624,5 +628,279 @@ class TrainerLie(Trainer):
 
     def lie_to_joints_v2(self, lie_params, joints, root_translation, scale_inds):
         lie_params = lie_params.view(lie_params.shape[0], -1, 3)
-        joints = self.lie_skeleton.forward_kinematics(lie_params, joints, root_translation, scale_inds)
+        joints = self.lie_skeleton.forward_kinematics(lie_params, joints, root_translation, scale_inds=scale_inds)
         return joints.view(joints.shape[0], -1)
+
+
+# Training with lie algebra parameters, and using local_global integrate module
+class TrainerLieV2(Trainer):
+    def __init__(self, motion_sampler, opt, device, raw_offsets, kinematic_chain):
+        super(TrainerLieV2, self).__init__(motion_sampler,
+                                           opt,
+                                           device)
+
+        self.raw_offsets = torch.from_numpy(raw_offsets).to(device).detach()
+        self.kinematic_chain = kinematic_chain
+        self.Tensor = torch.Tensor if self.opt.gpu_id is None else torch.cuda.FloatTensor
+        self.lie_skeleton = LieSkeleton(self.raw_offsets, kinematic_chain, self.Tensor)
+        if self.opt.isTrain:
+            self.recon_criterion = nn.MSELoss()
+            self.l1_trajec = nn.L1Loss()
+
+    def train(self, prior_net, posterior_net, decoder, veloc_net,
+              opt_prior_net, opt_posterior_net, opt_decoder, opt_veloc_net, sample_true):
+        opt_prior_net.zero_grad()
+        opt_posterior_net.zero_grad()
+        opt_decoder.zero_grad()
+        opt_veloc_net.zero_grad()
+
+        prior_net.init_hidden()
+        posterior_net.init_hidden()
+        decoder.init_hidden()
+        veloc_net.init_hidden()
+
+        # data(batch_size, motion_len, joints_num * 3)
+        data, cate_data = sample_true()
+        self.real_data = data
+        # dim(batch_size, category_dim)
+        cate_one_hot, classes_to_generate = self.get_cate_one_hot(cate_data)
+        data = self.Tensor(data.size()).copy_(data).detach_()
+        motion_length = data.shape[1]
+        # dim(batch_size, pose_dim), initial prior is a zero vector
+        prior_vec = self.tensor_fill((data.shape[0], data.shape[2]), 0)
+
+        log_dict = OrderedDict({'g_loss': 0})
+
+        teacher_force = True if random.random() < self.opt.tf_ratio else False
+        mse = 0
+        kld = 0
+        trajc_align = 0
+        opt_step_cnt = 0
+
+        for i in range(0, motion_length):
+            condition_vec = cate_one_hot
+            if self.opt.time_counter:
+                time_counter = i / (motion_length - 1)
+                time_counter_vec = self.tensor_fill((data.shape[0], 1), time_counter)
+                condition_vec = torch.cat((cate_one_hot, time_counter_vec), dim=1)
+            # print(prior_vec.shape, condition_vec.shape)
+            h = torch.cat((prior_vec, condition_vec), dim=1)
+            h_target = torch.cat((data[:, i], condition_vec), dim=1)
+
+            z_t, mu, logvar, h_in_p = posterior_net(h_target)
+            _, mu_p, logvar_p, _ = prior_net(h)
+
+            h_mid = torch.cat((h, z_t), dim=1)
+            lie_out, vel_mid, h_in = decoder(h_mid)
+            joints_o_traj = self.pose_lie_2_joints(lie_out, data[:, i], i == 0)
+            if i == 0:
+                pred_joints = joints_o_traj
+            else:
+                prior_traj = prior_vec[:, :3].detach()
+                prior_o_traj = prior_vec.detach() - prior_traj.repeat(1, int(prior_vec.shape[1]/3))
+                vel_in = torch.cat((prior_o_traj, joints_o_traj, vel_mid), dim=1)
+                vel_out = veloc_net(vel_in)
+                trajec = prior_traj + vel_out
+                pred_joints = joints_o_traj + trajec.repeat(1, int(joints_o_traj.shape[1]/3))
+            is_skip = True if random.random() < self.opt.skip_prob else False
+            if not is_skip:
+                opt_step_cnt += 1
+                mse += self.recon_criterion(pred_joints, data[:, i])
+                kld += self.kl_criterion(mu, logvar, mu_p, logvar_p)
+                if self.opt.do_trajec_align and i != 0:
+                    ground_vel = data[:, i, :3] - prior_traj
+                    trajc_align += self.l1_trajec(vel_out, ground_vel)
+            # generate_batch.append(x_pred.unsqueeze(1))
+            if teacher_force:
+                prior_vec = pred_joints
+            else:
+                prior_vec = data[:, i]
+
+        log_dict['g_recon_loss'] = mse.item() / opt_step_cnt
+        log_dict['g_kld_loss'] = kld.item() / opt_step_cnt
+        losses = mse + kld * self.opt.lambda_kld
+
+        if self.opt.do_trajec_align:
+            losses += trajc_align * self.opt.lambda_trajec
+            log_dict['g_trajec_align_loss'] = trajc_align.item() / opt_step_cnt
+
+        avg_loss = losses.item() / opt_step_cnt
+
+        losses.backward()
+
+        opt_prior_net.step()
+        opt_posterior_net.step()
+        opt_decoder.step()
+        opt_veloc_net.step()
+        log_dict['g_loss'] = avg_loss
+
+        return log_dict
+
+    def pose_lie_2_joints(self, lie_batch, pose_batch, init_pose=False):
+        root_translation = torch.zeros((lie_batch.shape[0], 3), requires_grad=False).to(self.device)
+        num_samples = pose_batch.shape[0]
+        pose_batch = pose_batch.view(num_samples, -1, 3)
+        pose_joints = self.lie_to_joints(lie_batch, pose_batch, root_translation, init_pose)
+        return pose_joints
+
+    def lie_to_joints(self, lie_params, joints, root_translation, init_pose=False):
+        lie_params = lie_params.view(lie_params.shape[0], -1, 3)
+        joints = self.lie_skeleton.forward_kinematics(lie_params, joints, root_translation, do_root_R=not init_pose)
+        return joints.view(joints.shape[0], -1)
+
+    def evaluate(self, prior_net, decoder, veloc_net, num_samples, cate_one_hot=None, real_joints=None):
+        prior_net.eval()
+        decoder.eval()
+        veloc_net.eval()
+        with torch.no_grad():
+            if cate_one_hot is None:
+                cate_one_hot, classes_to_generate = self.sample_z_cate(num_samples)
+            else:
+                classes_to_generate = None
+            prior_vec = self.tensor_fill((num_samples, self.opt.pose_dim), 0)
+            prior_net.init_hidden(num_samples)
+            decoder.init_hidden(num_samples)
+            veloc_net.init_hidden(num_samples)
+
+            # sample real poses from dataset
+            if real_joints is None:
+                # real_joints (batch_size, motion_len, 72)
+                real_joints, cate_data = self.sample_real_motion_batch()
+
+            if real_joints.shape[0] < num_samples:
+                repeat_ratio = int(num_samples / real_joints.shape[0])
+                real_joints = real_joints.repeat((repeat_ratio, 1, 1))
+                pad_num = num_samples - real_joints.shape[0]
+                if pad_num != 0:
+                    real_joints = torch.cat((real_joints, real_joints[: pad_num]), dim=0)
+            else:
+                real_joints = real_joints[:num_samples]
+            real_poses = real_joints[:, 0, :]
+            real_poses = self.Tensor(real_poses.size()).copy_(real_poses)
+
+            generate_batch = []
+            for i in range(0, self.opt.motion_length):
+                condition_vec = cate_one_hot
+                if self.opt.time_counter:
+                    time_counter = i / (self.opt.motion_length - 1)
+                    time_counter_vec = self.tensor_fill((num_samples, 1), time_counter)
+                    condition_vec = torch.cat((cate_one_hot, time_counter_vec), dim=1)
+                # print(prior_vec.shape, condition_vec.shape)
+                h = torch.cat((prior_vec, condition_vec), dim=1)
+
+                z_t_p, mu_p, logvar_p, h_in_p = prior_net(h)
+
+                h_mid = torch.cat((h, z_t_p), dim=1)
+                lie_out, vel_mid, h_in = decoder(h_mid)
+                joints_o_traj = self.pose_lie_2_joints(lie_out, real_poses, i == 0)
+                if i == 0:
+                    pred_joints = joints_o_traj
+                else:
+                    prior_traj = prior_vec[:, :3].detach()
+                    prior_o_traj = prior_vec.detach() - prior_traj.repeat(1, int(prior_vec.shape[1] / 3))
+                    vel_in = torch.cat((prior_o_traj, joints_o_traj, vel_mid), dim=1)
+                    vel_out = veloc_net(vel_in)
+                    trajec = prior_traj + vel_out
+                    pred_joints = joints_o_traj + trajec.repeat(1, int(joints_o_traj.shape[1] / 3))
+                prior_vec = pred_joints
+                generate_batch.append(pred_joints.unsqueeze(1))
+        # (batch_size, motion_len, 72)
+        generate_batch = torch.cat(generate_batch, dim=1)
+        return generate_batch.cpu(), classes_to_generate
+
+    def trainIters(self, prior_net, posterior_net, decoder, veloc_net):
+        self.opt_decoder = optim.Adam(decoder.parameters(), lr=0.0002, betas=(0.9, 0.999),
+                                      weight_decay=0.00001)
+        self.opt_prior_net = optim.Adam(prior_net.parameters(), lr=0.0002, betas=(0.9, 0.999),
+                                        weight_decay=0.00001)
+        self.opt_posterior_net = optim.Adam(posterior_net.parameters(), lr=0.0002, betas=(0.9, 0.999),
+                                            weight_decay=0.00001)
+        self.opt_veloc_net = optim.Adam(posterior_net.parameters(), lr=0.0002, betas=(0.9, 0.999),
+                                        weight_decay=0.00001)
+
+        prior_net.to(self.device)
+        posterior_net.to(self.device)
+        decoder.to(self.device)
+        veloc_net.to(self.device)
+
+        def save_model(file_name):
+            state = {
+                "prior_net": prior_net.state_dict(),
+                "posterior_net": posterior_net.state_dict(),
+                "decoder": decoder.state_dict(),
+                "veloc_net": veloc_net.state_dict(),
+                "opt_prior_net": self.opt_prior_net.state_dict(),
+                "opt_posterior_net": self.opt_posterior_net.state_dict(),
+                "opt_decoder": self.opt_decoder.state_dict(),
+                "opt_veloc_net": self.opt_veloc_net.state_dict(),
+                "iterations": iter_num
+            }
+            torch.save(state, os.path.join(self.opt.model_path, file_name + ".tar"))
+
+        def load_model(file_name):
+            model = torch.load(os.path.join(self.opt.model_path, file_name + '.tar'))
+            prior_net.load_state_dict(model['prior_net'])
+            posterior_net.load_state_dict(model['posterior_net'])
+            decoder.load_state_dict(model['decoder'])
+            veloc_net.load_state_dict(model['veloc_net'])
+
+            self.opt_prior_net.load_state_dict(model['opt_prior_net'])
+            self.opt_posterior_net.load_state_dict(model['opt_posterior_net'])
+            self.opt_decoder.load_state_dict(model['opt_decoder'])
+            self.opt_veloc_net.load_state_dict(model['opt_veloc_net'])
+
+        if self.opt.is_continue and self.opt.isTrain:
+            load_model('latest')
+
+        iter_num = 0
+        logs = OrderedDict()
+        start_time = time.time()
+
+        e_num_samples = 20
+        cate_one_hot, classes = self.sample_z_cate(e_num_samples)
+        np.save(os.path.join(self.opt.joints_path, "motion_class.npy"), classes)
+
+        start_weight = self.opt.lambda_kld
+
+        # print("Number of iterations for each epoch: %d" % (int(self.opt.iters / self.opt.batch_size)))
+
+        while True:
+            prior_net.train()
+            posterior_net.train()
+            decoder.train()
+            veloc_net.train()
+
+            gen_log_dict = self.train(prior_net, posterior_net, decoder, veloc_net, self.opt_prior_net, self.opt_posterior_net,
+                                      self.opt_decoder, self.opt_veloc_net, self.sample_real_motion_batch)
+
+            for k, v in gen_log_dict.items():
+                if k not in logs:
+                    logs[k] = [v]
+                else:
+                    logs[k].append(v)
+
+            iter_num += 1
+
+            if iter_num % self.opt.print_every == 0:
+                mean_loss = OrderedDict()
+                for k, v in logs.items():
+                    mean_loss[k] = sum(logs[k][-1 * self.opt.print_every:]) / self.opt.print_every
+                print_current_loss(start_time, iter_num, self.opt.iters, mean_loss, current_kld=self.opt.lambda_kld)
+
+            if iter_num % self.opt.eval_every == 0:
+                fake_motion, _ = self.evaluate(prior_net, decoder, veloc_net, e_num_samples, cate_one_hot)
+                np.save(os.path.join(self.opt.joints_path, "motion_joints" + str(iter_num) + ".npy"), fake_motion)
+
+            if iter_num % self.opt.save_every == 0:
+                save_model(str(iter_num))
+
+            if iter_num % self.opt.save_latest == 0:
+                save_model('latest')
+
+            if self.opt.do_kld_schedule:
+                if iter_num % self.opt.update_interval == 0:
+                    self.kld_weight_scheduler(iter_num, start_weight)
+
+            if iter_num >= self.opt.iters:
+                break
+        return logs
