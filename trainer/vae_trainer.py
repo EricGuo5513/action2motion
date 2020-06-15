@@ -645,7 +645,7 @@ class TrainerLieV2(Trainer):
         self.lie_skeleton = LieSkeleton(self.raw_offsets, kinematic_chain, self.Tensor)
         if self.opt.isTrain:
             self.recon_criterion = nn.MSELoss()
-            self.l1_trajec = nn.L1Loss()
+            self.l2_trajec = nn.MSELoss()
 
     def train(self, prior_net, posterior_net, decoder, veloc_net,
               opt_prior_net, opt_posterior_net, opt_decoder, opt_veloc_net, sample_true):
@@ -709,7 +709,7 @@ class TrainerLieV2(Trainer):
                 kld += self.kl_criterion(mu, logvar, mu_p, logvar_p)
                 if self.opt.do_trajec_align and i != 0:
                     ground_vel = data[:, i, :3] - prior_traj
-                    trajc_align += self.l1_trajec(vel_out, ground_vel)
+                    trajc_align += self.l2_trajec(vel_out, ground_vel)
             # generate_batch.append(x_pred.unsqueeze(1))
             if teacher_force:
                 prior_vec = pred_joints
@@ -815,7 +815,7 @@ class TrainerLieV2(Trainer):
                                         weight_decay=0.00001)
         self.opt_posterior_net = optim.Adam(posterior_net.parameters(), lr=0.0002, betas=(0.9, 0.999),
                                             weight_decay=0.00001)
-        self.opt_veloc_net = optim.Adam(posterior_net.parameters(), lr=0.0002, betas=(0.9, 0.999),
+        self.opt_veloc_net = optim.Adam(veloc_net.parameters(), lr=0.0002, betas=(0.9, 0.999),
                                         weight_decay=0.00001)
 
         prior_net.to(self.device)

@@ -59,6 +59,15 @@ opt_conversion = {
 
 
 dataset_opt = {
+    'humanact13': {
+        'dataset_path': "./dataset/humanact13",
+        'input_size_raw': 72,
+        'joints_num': 24,
+        'label_dec': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        'raw_offsets': paramUtil.shihao_raw_offsets,
+        'kinematic_chain': paramUtil.shihao_kinematic_chain,
+        'enumerator': paramUtil.shihao_coarse_action_enumerator,
+    },
     'shihao': {
         'dataset_path': './dataset/pose',
         'pkl_path': './dataset/pose_shihao_merge',
@@ -142,6 +151,8 @@ def get_opt(opt_path, num_motions, device):
         opt.input_size = opt.input_size_raw + opt.dim_category + 1
     else:
         opt.input_size = opt.input_size_raw + opt.dim_category
+
+    opt.veloc_input_size = opt.input_size_raw * 2 + 10
 
     opt.output_size = opt.input_size_raw
     

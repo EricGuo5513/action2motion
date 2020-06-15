@@ -20,7 +20,12 @@ def get_dataset_motion_dataset(opt):
     if opt.opt_path in cached_dataset:
         return cached_dataset[opt.opt_path]
 
-    if opt.dataset_type == 'ntu_rgbd_vibe':
+    if opt.dataset_type == "humanact13":
+        dataset_path = "./dataset/humanact13"
+        HumanAct13Options = Options(False, False, False, 60, True)
+        data = dataset.MotionFolderDatasetHumanAct13(dataset_path, opt, lie_enforce=opt.lie_enforce)
+        motion_dataset = dataset.MotionDataset(data, HumanAct13Options)
+    elif opt.dataset_type == 'ntu_rgbd_vibe':
         file_prefix = "./dataset"
         motion_desc_file = "ntu_vibe_list.txt"
         joints_num = 18

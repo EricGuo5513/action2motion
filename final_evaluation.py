@@ -133,8 +133,8 @@ def calculate_diversity_multimodality(activations, labels, num_labels):
 
     return diversity, multimodality
 
-def evaluation():
-    with open('final_evaluation_mocap.log', 'w') as f:
+def evaluation(log_file):
+    with open(log_file, 'w') as f:
         for replication in range(20):
             motion_loaders = {}
             motion_loaders['ground truth'] = ground_truth_motion_loader
@@ -200,39 +200,45 @@ def animation_4_user_study(save_dir, motion_loaders):
 
 if __name__ == '__main__':
 
-    dataset_opt_path = '/home/chuan/language2pose/action2pose/checkpoints/vae/shihao/vanilla_vae_lie_mse_kld001/opt.txt'
+    dataset_opt_path = './checkpoints/vae/humanact13/vae_veloc_f0001_t01_trajc10/opt.txt'
     eval_motion_loaders = {
+        'vae_veloc_f0001_t01': lambda num_motions, device: get_motion_loader(
+            './checkpoints/vae/humanact13/vae_veloc_f0001_t01/opt.txt',
+            num_motions, 128, device, ground_truth_motion_loader),
+        'vae_veloc_f0001_t01_trajc10': lambda num_motions, device: get_motion_loader(
+        './checkpoints/vae/humanact13/vae_veloc_f0001_t01_trajc10/opt.txt',
+        num_motions, 128, device, ground_truth_motion_loader)
         #'vanilla_vae_lie_mse': lambda num_motions, device: get_motion_loader(
         #    './checkpoints/vae/shihao/vanilla_vae_lie_mse/opt.txt',
         #    num_motions, 36, device, ground_truth_motion_loader),
         #'vanilla_vae_lie_mse_kld01': lambda num_motions, device: get_motion_loader(
         #    './checkpoints/vae/shihao/vanilla_vae_lie_mse_kld01/opt.txt',
         #    num_motions, 128, device, ground_truth_motion_loader),
-        'vanilla_vae_lie_mse_kld001': lambda num_motions, device: get_motion_loader(
-            './checkpoints/vae/shihao/vanilla_vae_lie_mse_kld001/opt.txt',
-            num_motions, 128, device, ground_truth_motion_loader),
+        # 'vanilla_vae_lie_mse_kld001': lambda num_motions, device: get_motion_loader(
+        #     './checkpoints/vae/shihao/vanilla_vae_lie_mse_kld001/opt.txt',
+        #     num_motions, 128, device, ground_truth_motion_loader),
         #'vanilla_vae_lie_mse_kld0001': lambda num_motions, device: get_motion_loader(
         #    './checkpoints/vae/ntu_rgbd_vibe/vanilla_vae_lie_mse_kld0001/opt.txt',
         #    num_motions, 128, device, ground_truth_motion_loader),
         #'ground_truth': lambda num_motions, device: get_dataset_motion_loader(
         #    get_opt(dataset_opt_path, num_motions, device), num_motions, device),
-        'vanila_vae_tf': lambda num_motions, device: get_motion_loader(
-            './checkpoints/vae/shihao/vanila_vae_tf/opt.txt',
-            num_motions, 128, device),
-        'motion_gan': lambda num_motions, device: get_motion_loader(
-             './checkpoints/shihao/motion_gan/opt.txt',
-             num_motions, 128, device),
-        'conditionedRNN': lambda num_motions, device: get_motion_loader(
-             './model_file/conditionedRNN_shihao_opt.txt',
-             num_motions, 128, device, ground_truth_motion_loader),
-        'deep_completion': lambda num_motions, device: get_motion_loader(
-             './model_file/deep_completion_shihao_opt.txt',
-             num_motions, 128, device),
+        # 'vanila_vae_tf': lambda num_motions, device: get_motion_loader(
+        #     './checkpoints/vae/shihao/vanila_vae_tf/opt.txt',
+        #     num_motions, 128, device),
+        # 'motion_gan': lambda num_motions, device: get_motion_loader(
+        #      './checkpoints/shihao/motion_gan/opt.txt',
+        #      num_motions, 128, device),
+        # 'conditionedRNN': lambda num_motions, device: get_motion_loader(
+        #      './model_file/conditionedRNN_shihao_opt.txt',
+        #      num_motions, 128, device, ground_truth_motion_loader),
+        # 'deep_completion': lambda num_motions, device: get_motion_loader(
+        #      './model_file/deep_completion_shihao_opt.txt',
+        #      num_motions, 128, device),
     }
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    torch.cuda.set_device(0)
-    num_motions = 400
+    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    torch.cuda.set_device(2)
+    num_motions = 2000
 
     dataset_opt = get_opt(dataset_opt_path, num_motions, device)
     gru_classifier_for_fid = load_classifier_for_fid(dataset_opt, device)
@@ -241,9 +247,14 @@ if __name__ == '__main__':
     ground_truth_motion_loader = get_dataset_motion_loader(dataset_opt, num_motions, device)
     motion_loaders = {}
     # motion_loaders['ground_truth'] = ground_truth_motion_loader
+    '''
     for motion_loader_name, motion_loader_getter in eval_motion_loaders.items():
-        motion_loader = motion_loader_getter(num_motions, device)
-        motion_loaders[motion_loader_name] = motion_loader
+    motion_loader = motion_loader_getter(num_motions, device)
+    motion_loaders[motion_loader_name] = motion_loader
     save_dir = './eval_results/user_study'
     animation_4_user_study(save_dir, motion_loaders)
+    
+    '''
+    log_file = 'final_evaluation_humanact.log'
+    evaluation(log_file)
 

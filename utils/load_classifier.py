@@ -6,6 +6,7 @@ from models.motion_gan import MotionDiscriminator
 classifier_model_files = {
     'ntu_rgbd_vibe': './model_file/action_recognition_model_vibe_v2.tar',
     'shihao': './model_file/action_recognition_model_shihao.tar',
+    'humanact13': './model_file/action_recognition_model_shihao.tar',
     'mocap': './model_file/action_recognition_model_mocap.tar'
 }
 

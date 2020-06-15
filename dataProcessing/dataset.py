@@ -152,13 +152,17 @@ class MotionFolderDatasetShihaoV2(data.Dataset):
 
             # Load data and get label
             column_data = np.array(data_mat[:, 0]).astype(int)
-            min_array, max_array = np.where(column_data == int(self.clip['start'][i]))[0][0], \
-                                 np.where(column_data == int(self.clip['end'][i]))[0][0]
-            pose_list = []
-            for k in range(min_array, max_array+1):
-                pose_list.append(np.array(data_pkl[k]['joints3d'])[None, ...])
-            # motion_len, joints_num, 3
-            pose_raw = np.concatenate(pose_list, axis=0)
+            try:
+                min_array, max_array = np.where(column_data == int(self.clip['start'][i]))[0][0], \
+                                     np.where(column_data == int(self.clip['end'][i]))[0][0]
+                pose_list = []
+                for k in range(min_array, max_array+1):
+                    pose_list.append(np.array(data_pkl[k]['joints3d'])[None, ...])
+                # motion_len, joints_num, 3
+                pose_raw = np.concatenate(pose_list, axis=0)
+            except:
+                print(self.clip.iloc[i])
+                continue
 
             if do_offset:
                 # get the offset and return the final pose
@@ -275,6 +279,7 @@ class MotionFolderDatasetHumanAct13(data.Dataset):
         self.labels = []
         self.opt = opt
         data_list = os.listdir(datapath)
+        data_list.sort()
 
         if lie_enforce:
             raw_offsets = torch.from_numpy(raw_offsets)
@@ -314,12 +319,14 @@ class MotionFolderDatasetHumanAct13(data.Dataset):
                     pose_mat = pose_mat - offset
 
             label = file_name[file_name.find('A') + 1: file_name.find('.')]
+            # print(file_name)
             if opt.coarse_grained:
                 label = label[:2]
             if label not in self.labels:
                 self.labels.append(label)
             self.data.append((pose_mat, label))
             self.lengths.append(pose_mat.shape[0])
+        self.labels.sort()
         self.cumsum = np.cumsum([0] + self.lengths)
         print("Total number of frames {}, videos {}, action types {}".format(self.cumsum[-1], len(data_list), len(self.labels)))
         self.label_enc = dict(zip(self.labels, np.arange(len(self.labels))))
@@ -453,6 +460,8 @@ class MotionDataset(data.Dataset):
             start = 0 if gap == 0 else np.random.randint(0, gap, 1)[0]
             end = start + self.motion_length
             r_motion = motion[start:end]
+            # offset deduction
+            r_motion = r_motion - np.tile(r_motion[0, :3], (1, int(r_motion.shape[-1]/3)))
         # padding
         else:
             gap = self.motion_length - motion_len

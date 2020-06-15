@@ -6,13 +6,17 @@ from motion_loaders.motion_gan_motion_loader import MotionGanGeneratedDataset
 from motion_loaders.rnn_motion_loader import ConditionedRNNGeneratedDataset
 from motion_loaders.deep_completion_motion_loader import DeepCompletionGeneratedDataset
 from motion_loaders.motion_vae_lie_motion_loader import MotionVAELieGeneratedDataset
+from motion_loaders.motion_vae_lie_veloc_motion_loader import MotionVAEVelocGeneratedDataset
 
 
 def get_motion_loader(opt_path, num_motions, batch_size, device, ground_truth_motion_loader=None):
     opt = get_opt(opt_path, num_motions, device)
 
     if '/vae/' in opt_path:
-        if 'lie' in opt.name:
+        if 'veloc' in opt.name:
+            print('Generating %s ...' % opt.name)
+            dataset = MotionVAEVelocGeneratedDataset(opt, num_motions, batch_size, device, ground_truth_motion_loader)
+        elif 'lie' in opt.name:
             print('Generating %s ...' % opt.name)
             dataset = MotionVAELieGeneratedDataset(opt, num_motions, batch_size, device, ground_truth_motion_loader)
         else:

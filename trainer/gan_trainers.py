@@ -6,7 +6,7 @@ from torch import nn
 import torch.optim as optim
 import numpy as np
 import torch.functional as F
-from utils.plot_script import print_current_loss
+from utils.utils_ import print_current_loss
 from lie.pose_lie import *
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
