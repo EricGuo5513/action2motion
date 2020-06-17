@@ -108,6 +108,8 @@ if __name__ == "__main__":
                                            opt.posterior_hidden_layers, opt.batch_size, device)
     if opt.use_vel_S:
         veloc_net = networks.VelocityNetwork_Sim(input_size*2 + 10, 3, opt.hidden_size)
+    elif opt.use_vel_H:
+        veloc_net = networks.VelocityNetworkHierarchy(3, kinematic_chain)
     else:
         veloc_net = networks.VelocityNetwork(input_size*2 + 10, 3, opt.hidden_size, opt.veloc_hidden_layers,
                                              opt.batch_size, device)
@@ -128,7 +130,10 @@ if __name__ == "__main__":
     print(decoder)
     print("Total parameters of decoder: {}".format(pc_decoder))
 
-    trainer = TrainerLieV2(motion_loader, opt, device, raw_offsets, kinematic_chain)
+    if opt.do_relative:
+        trainer = TrainerLieV3(motion_loader, opt, device, raw_offsets, kinematic_chain)
+    else:
+        trainer = TrainerLieV2(motion_loader, opt, device, raw_offsets, kinematic_chain)
 
     logs = trainer.trainIters(prior_net, posterior_net, decoder, veloc_net)
 

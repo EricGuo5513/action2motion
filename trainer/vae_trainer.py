@@ -698,18 +698,28 @@ class TrainerLieV2(Trainer):
             else:
                 prior_traj = prior_vec[:, :3].detach()
                 prior_o_traj = prior_vec.detach() - prior_traj.repeat(1, int(prior_vec.shape[1]/3))
-                vel_in = torch.cat((prior_o_traj, joints_o_traj, vel_mid), dim=1)
+                if self.opt.use_vel_H:
+                    vel_in = (prior_o_traj, joints_o_traj, vel_mid)
+                else:
+                    vel_in = torch.cat((prior_o_traj, joints_o_traj, vel_mid), dim=1)
                 vel_out = veloc_net(vel_in)
                 trajec = prior_traj + vel_out
                 pred_joints = joints_o_traj + trajec.repeat(1, int(joints_o_traj.shape[1]/3))
             is_skip = True if random.random() < self.opt.skip_prob else False
             if not is_skip:
                 opt_step_cnt += 1
-                mse += self.recon_criterion(pred_joints, data[:, i])
                 kld += self.kl_criterion(mu, logvar, mu_p, logvar_p)
-                if self.opt.do_trajec_align and i != 0:
-                    ground_vel = data[:, i, :3] - prior_traj
-                    trajc_align += self.l2_trajec(vel_out, ground_vel)
+                if self.opt.optim_seperate:
+                    ground_o_traj = data[:, i] - data[:, i, :3].repeat(1, int(data[:, i].shape[1]/3))
+                    mse += self.recon_criterion(joints_o_traj, ground_o_traj)
+                    if i != 0:
+                        ground_vel = data[:, i, :3] - prior_traj
+                        trajc_align += self.l2_trajec(vel_out, ground_vel)
+                else:
+                    mse += self.recon_criterion(pred_joints, data[:, i])
+                    if self.opt.do_trajec_align and i != 0:
+                        ground_vel = data[:, i, :3] - prior_traj
+                        trajc_align += self.l2_trajec(vel_out, ground_vel)
             # generate_batch.append(x_pred.unsqueeze(1))
             if teacher_force:
                 prior_vec = pred_joints
@@ -720,7 +730,7 @@ class TrainerLieV2(Trainer):
         log_dict['g_kld_loss'] = kld.item() / opt_step_cnt
         losses = mse + kld * self.opt.lambda_kld
 
-        if self.opt.do_trajec_align:
+        if self.opt.do_trajec_align or self.opt.optim_seperate:
             losses += trajc_align * self.opt.lambda_trajec
             log_dict['g_trajec_align_loss'] = trajc_align.item() / opt_step_cnt
 
@@ -798,7 +808,10 @@ class TrainerLieV2(Trainer):
                 else:
                     prior_traj = prior_vec[:, :3].detach()
                     prior_o_traj = prior_vec.detach() - prior_traj.repeat(1, int(prior_vec.shape[1] / 3))
-                    vel_in = torch.cat((prior_o_traj, joints_o_traj, vel_mid), dim=1)
+                    if self.opt.use_vel_H:
+                        vel_in = (prior_o_traj, joints_o_traj, vel_mid)
+                    else:
+                        vel_in = torch.cat((prior_o_traj, joints_o_traj, vel_mid), dim=1)
                     vel_out = veloc_net(vel_in)
                     trajec = prior_traj + vel_out
                     pred_joints = joints_o_traj + trajec.repeat(1, int(joints_o_traj.shape[1] / 3))
@@ -904,3 +917,173 @@ class TrainerLieV2(Trainer):
             if iter_num >= self.opt.iters:
                 break
         return logs
+
+
+class TrainerLieV3(TrainerLieV2):
+    def train(self, prior_net, posterior_net, decoder, veloc_net,
+              opt_prior_net, opt_posterior_net, opt_decoder, opt_veloc_net, sample_true):
+        opt_prior_net.zero_grad()
+        opt_posterior_net.zero_grad()
+        opt_decoder.zero_grad()
+        opt_veloc_net.zero_grad()
+
+        prior_net.init_hidden()
+        posterior_net.init_hidden()
+        decoder.init_hidden()
+        veloc_net.init_hidden()
+
+        # data(batch_size, motion_len, joints_num * 3)
+        data, cate_data = sample_true()
+        self.real_data = data
+        # dim(batch_size, category_dim)
+        cate_one_hot, classes_to_generate = self.get_cate_one_hot(cate_data)
+        data = self.Tensor(data.size()).copy_(data).detach_()
+        motion_length = data.shape[1]
+        # dim(batch_size, pose_dim), initial prior is a zero vector
+        prior_vec = self.tensor_fill((data.shape[0], data.shape[2]), 0)
+
+        log_dict = OrderedDict({'g_loss': 0})
+
+        teacher_force = True if random.random() < self.opt.tf_ratio else False
+        mse = 0
+        kld = 0
+        trajc_align = 0
+        opt_step_cnt = 0
+        num_joints = int(data.shape[-1]/3)
+
+        for i in range(0, motion_length):
+            prior_r_loc = prior_vec[:, :3].repeat(1, num_joints)
+            # current frame at location relative to previous location
+            if i == 0:
+                ground_vec = data[:, i] - data[:, i, :3].repeat(1, num_joints)
+            else:
+                ground_vec = data[:, i] - data[:, i-1, :3].repeat(1, num_joints)
+            # previous pose located at origin
+            prior_vec = prior_vec - prior_r_loc
+
+            condition_vec = cate_one_hot
+            if self.opt.time_counter:
+                time_counter = i / (motion_length - 1)
+                time_counter_vec = self.tensor_fill((data.shape[0], 1), time_counter)
+                condition_vec = torch.cat((cate_one_hot, time_counter_vec), dim=1)
+            # print(prior_vec.shape, condition_vec.shape)
+            h = torch.cat((prior_vec, condition_vec), dim=1)
+            h_target = torch.cat((ground_vec, condition_vec), dim=1)
+
+            z_t, mu, logvar, h_in_p = posterior_net(h_target)
+            _, mu_p, logvar_p, _ = prior_net(h)
+
+            h_mid = torch.cat((h, z_t), dim=1)
+            lie_out, vel_mid, h_in = decoder(h_mid)
+            pred_o_traj = self.pose_lie_2_joints(lie_out, data[:, i], i == 0)
+            if i == 0:
+                pred_joints = pred_o_traj
+            else:
+                vel_in = torch.cat((prior_vec, pred_o_traj, vel_mid), dim=1)
+                vel_out = veloc_net(vel_in)
+                pred_joints = pred_o_traj + vel_out.repeat(1, num_joints)
+            is_skip = True if random.random() < self.opt.skip_prob else False
+            if not is_skip:
+                opt_step_cnt += 1
+                kld += self.kl_criterion(mu, logvar, mu_p, logvar_p)
+                if self.opt.optim_seperate:
+                    ground_o_traj = ground_vec - ground_vec[:, :3].repeat(1, num_joints)
+                    mse += self.recon_criterion(pred_o_traj, ground_o_traj)
+                    if i != 0:
+                        ground_vel = ground_vec[:, :3]
+                        trajc_align += self.l2_trajec(vel_out, ground_vel)
+                else:
+                    mse += self.recon_criterion(pred_joints, ground_vec)
+                    if self.opt.do_trajec_align and i != 0:
+                        ground_vel = ground_vec[:, :3]
+                        trajc_align += self.l2_trajec(vel_out, ground_vel)
+            # generate_batch.append(x_pred.unsqueeze(1))
+            if teacher_force:
+                prior_vec = pred_joints
+            else:
+                prior_vec = data[:, i]
+
+        log_dict['g_recon_loss'] = mse.item() / opt_step_cnt
+        log_dict['g_kld_loss'] = kld.item() / opt_step_cnt
+        losses = mse + kld * self.opt.lambda_kld
+
+        if self.opt.do_trajec_align or self.opt.optim_seperate:
+            losses += trajc_align * self.opt.lambda_trajec
+            log_dict['g_trajec_align_loss'] = trajc_align.item() / opt_step_cnt
+
+        avg_loss = losses.item() / opt_step_cnt
+
+        losses.backward()
+
+        opt_prior_net.step()
+        opt_posterior_net.step()
+        opt_decoder.step()
+        opt_veloc_net.step()
+        log_dict['g_loss'] = avg_loss
+
+        return log_dict
+
+    def evaluate(self, prior_net, decoder, veloc_net, num_samples, cate_one_hot=None, real_joints=None):
+        prior_net.eval()
+        decoder.eval()
+        veloc_net.eval()
+        with torch.no_grad():
+            if cate_one_hot is None:
+                cate_one_hot, classes_to_generate = self.sample_z_cate(num_samples)
+            else:
+                classes_to_generate = None
+            prior_vec = self.tensor_fill((num_samples, self.opt.pose_dim), 0)
+            prior_net.init_hidden(num_samples)
+            decoder.init_hidden(num_samples)
+            veloc_net.init_hidden(num_samples)
+
+            # sample real poses from dataset
+            if real_joints is None:
+                # real_joints (batch_size, motion_len, 72)
+                real_joints, cate_data = self.sample_real_motion_batch()
+
+            if real_joints.shape[0] < num_samples:
+                repeat_ratio = int(num_samples / real_joints.shape[0])
+                real_joints = real_joints.repeat((repeat_ratio, 1, 1))
+                pad_num = num_samples - real_joints.shape[0]
+                if pad_num != 0:
+                    real_joints = torch.cat((real_joints, real_joints[: pad_num]), dim=0)
+            else:
+                real_joints = real_joints[:num_samples]
+            real_poses = real_joints[:, 0, :]
+            real_poses = self.Tensor(real_poses.size()).copy_(real_poses)
+
+            generate_batch = []
+            num_joints = int(real_poses.shape[-1] / 3)
+            # print(num_joints)
+            for i in range(0, self.opt.motion_length):
+                # print(prior_vec[:, :3].repeat(1, num_joints).shape)
+                # print(prior_vec.shape)
+                prior_vec = prior_vec - prior_vec[:, :3].repeat(1, num_joints)
+                condition_vec = cate_one_hot
+                if self.opt.time_counter:
+                    time_counter = i / (self.opt.motion_length - 1)
+                    time_counter_vec = self.tensor_fill((num_samples, 1), time_counter)
+                    condition_vec = torch.cat((cate_one_hot, time_counter_vec), dim=1)
+                # print(prior_vec.shape, condition_vec.shape)
+                h = torch.cat((prior_vec, condition_vec), dim=1)
+
+                z_t_p, mu_p, logvar_p, h_in_p = prior_net(h)
+
+                h_mid = torch.cat((h, z_t_p), dim=1)
+                lie_out, vel_mid, h_in = decoder(h_mid)
+                pred_o_traj = self.pose_lie_2_joints(lie_out, real_poses, i == 0)
+                if i == 0:
+                    pred_joints = pred_o_traj
+                else:
+                    vel_in = torch.cat((prior_vec, pred_o_traj, vel_mid), dim=-1)
+                    vel_out = veloc_net(vel_in)
+                    pred_joints = pred_o_traj + vel_out.repeat(1, num_joints)
+                prior_vec = pred_joints
+                generate_batch.append(pred_joints.unsqueeze(1))
+        for i in range(1, len(generate_batch)):
+            # current location equals to the relative location plus location of previous pose
+            generate_batch[i] = generate_batch[i] + generate_batch[i-1][:, :, :3].repeat(1, 1, num_joints)
+        # (batch_size, motion_len, 72)
+        generate_batch = torch.cat(generate_batch, dim=1)
+        return generate_batch.cpu(), classes_to_generate

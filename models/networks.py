@@ -60,3 +60,34 @@ class VelocityNetwork_Sim(nn.Module):
         h_3 = self.linear3(h_2)
         output = nn.LeakyReLU(negative_slope=0.1)(h_3)
         return output
+
+
+class VelocityNetworkHierarchy(nn.Module):
+    def __init__(self, output_size, chains):
+        super(VelocityNetworkHierarchy, self).__init__()
+        self.output_size = output_size
+        self.chains = chains
+        self.inter_linear = nn.ModuleList([nn.Linear(len(chain), 5) for chain in chains])
+        self.linear = nn.Linear(5*len(chains) + 10, 30)
+        self.out_linear = nn.Linear(30, 3)
+
+    def init_hidden(self, num_samples=None):
+        pass
+
+    def forward(self, inputs):
+        p1, p2, hid = inputs
+        res_pose = p1 - p2
+        h_vec = None
+        for i in range(len(self.chains)):
+            chain_in = res_pose[:, self.chains[i]]
+            chain_out = self.inter_linear[i](chain_in)
+            chain_out = nn.LeakyReLU(negative_slope=0.1)(chain_out)
+            if h_vec is None:
+                h_vec = chain_out
+            else:
+                h_vec = torch.cat((h_vec, chain_out), dim=-1)
+        h_in = torch.cat((h_vec, hid), dim=-1)
+        h = self.linear(h_in)
+        h = nn.LeakyReLU(negative_slope=0.1)(h)
+        output = self.out_linear(h)
+        return output

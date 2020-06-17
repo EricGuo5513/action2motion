@@ -34,6 +34,10 @@ class BaseOptions():
 
         self.parser.add_argument('--use_velocity', action="store_true", help="Use velocity estimation network")
         self.parser.add_argument('--use_vel_S', action="store_true", help="Use simple velocity estimation network")
+        self.parser.add_argument('--use_vel_H', action="store_true", help="Use hierarchical velocity estimation network")
+
+        self.parser.add_argument('--do_relative', action="store_true",
+                                 help="Use hierarchical velocity estimation network")
 
         self.parser.add_argument('--epoch_size', type=int, help="epoch_size of training velocity estimation network")
 

@@ -44,7 +44,10 @@ class MotionVAEVelocGeneratedDataset(Dataset):
         self.decoder.to(device)
 
         self.num_motions = num_motions
-        self.trainer = TrainerLieV2(None, opt, device, raw_offsets, kinematic_chain)
+        if opt.do_relative:
+            self.trainer = TrainerLieV3(None, opt, device, raw_offsets, kinematic_chain)
+        else:
+            self.trainer = TrainerLieV2(None, opt, device, raw_offsets, kinematic_chain)
 
         self.pool_size = num_motions
         self.resize_counter = 0

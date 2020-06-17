@@ -200,14 +200,17 @@ def animation_4_user_study(save_dir, motion_loaders):
 
 if __name__ == '__main__':
 
-    dataset_opt_path = './checkpoints/vae/humanact13/vae_veloc_f0001_t01_trajc10/opt.txt'
+    dataset_opt_path = './checkpoints/vae/humanact13/vae_veloc_f0001_t01_optim_seperate/opt.txt'
     eval_motion_loaders = {
-        'vae_veloc_f0001_t01': lambda num_motions, device: get_motion_loader(
-            './checkpoints/vae/humanact13/vae_veloc_f0001_t01/opt.txt',
+        'vae_veloc_f0001_t01_optim_seperate': lambda num_motions, device: get_motion_loader(
+            './checkpoints/vae/humanact13/vae_veloc_f0001_t01_optim_seperate/opt.txt',
             num_motions, 128, device, ground_truth_motion_loader),
-        'vae_veloc_f0001_t01_trajc10': lambda num_motions, device: get_motion_loader(
-        './checkpoints/vae/humanact13/vae_veloc_f0001_t01_trajc10/opt.txt',
-        num_motions, 128, device, ground_truth_motion_loader)
+        # 'vae_veloc_f0001_t01': lambda num_motions, device: get_motion_loader(
+        #     './checkpoints/vae/humanact13/vae_veloc_f0001_t01/opt.txt',
+        #     num_motions, 128, device, ground_truth_motion_loader),
+        # 'vae_veloc_f0001_t01_trajc10': lambda num_motions, device: get_motion_loader(
+        # './checkpoints/vae/humanact13/vae_veloc_f0001_t01_trajc10/opt.txt',
+        # num_motions, 128, device, ground_truth_motion_loader)
         #'vanilla_vae_lie_mse': lambda num_motions, device: get_motion_loader(
         #    './checkpoints/vae/shihao/vanilla_vae_lie_mse/opt.txt',
         #    num_motions, 36, device, ground_truth_motion_loader),

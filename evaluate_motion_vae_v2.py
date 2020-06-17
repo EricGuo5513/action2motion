@@ -92,6 +92,8 @@ if __name__ == "__main__":
 
     if opt.use_vel_S:
         veloc_net = networks.VelocityNetwork_Sim(input_size * 2 + 10, 3, opt.hidden_size)
+    elif opt.use_vel_H:
+        veloc_net = networks.VelocityNetworkHierarchy(3, kinematic_chain)
     else:
         veloc_net = networks.VelocityNetwork(input_size * 2 + 10, 3, opt.hidden_size, opt.veloc_hidden_layers,
                                              opt.batch_size, device)
@@ -121,7 +123,10 @@ if __name__ == "__main__":
     motion_dataset = dataset.MotionDataset(data, opt)
     motion_loader = DataLoader(motion_dataset, batch_size=opt.batch_size, drop_last=True, num_workers=2,
                                shuffle=True)
-    trainer = TrainerLieV2(motion_loader, opt, device, raw_offsets, kinematic_chain)
+    if opt.do_relative:
+        trainer = TrainerLieV3(motion_loader, opt, device, raw_offsets, kinematic_chain)
+    else:
+        trainer = TrainerLieV2(motion_loader, opt, device, raw_offsets, kinematic_chain)
 
     dim_category = len(data.labels)
 
@@ -165,32 +170,6 @@ if __name__ == "__main__":
 
         if opt.dataset_type == "shihao" or opt.dataset_type == "humanact13":
             pose_tree = paramUtil.smpl_tree
-
-            # offset = np.tile(np.array([-0.43391575,  0.31606525,  2.57938163]), (motion_orig.shape[0], 24, 1))
-            # motion_3d = offset + motion_mat
-            # motion_3d = motion_3d.reshape(-1, joints_num, 3)
-            # print(motion_3d[..., 2].min(), motion_3d[..., 2].max())
-            # motion_2d_mat = np.zeros(motion_3d.shape[:-1] + (2,))
-            # motion_2d_imgs = []
-            # for k in range(motion_3d.shape[0]):
-            #     motion_2d_mat[k] = project_3d_to_2d(motion_3d[k])
-            #
-            # crop_bbox, crop_size = compute_videocrop_bbox(motion_2d_mat, 100, 1.28, (1920, 1080), thresold=0)
-            # motion_2d_mat = crop_and_resize_motion(motion_2d_mat, crop_bbox, crop_size, (256, 200), joints_num=24)
-            # for k in range(motion_2d_mat.shape[0]):
-            #     img_2d = draw_pose_from_cords((200, 256), motion_2d_mat[k], pose_tree, 2)
-            #     motion_2d_imgs.append(img_2d)
-
-
-            # file_prefix = result_path + class_type
-            # compose_gif_img_list(motion_2d_imgs, file_prefix + '_2d.gif', duration=0.5)
-            # np.save(os.path.join(keypoint_path, class_type + '_3d.npy'), motion_3d)
-            # np.save(os.path.join(keypoint_path, class_type + '_2d.npy'), motion_2d_mat)
-            '''
-            motion_mat = mt.swap_yz(motion_mat)
-            motion_mat[:, :, 2] *= -1
-            plot_3d_motion(motion_mat, pose_tree, class_type, file_name, interval=150)
-            '''
             plot_3d_motion_v2(motion_mat, kinematic_chain, save_path=file_name, interval=80)
 
         elif opt.dataset_type == "ntu_rgbd":

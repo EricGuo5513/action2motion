@@ -288,6 +288,8 @@ class MotionFolderDatasetHumanAct13(data.Dataset):
         for file_name in data_list:
             full_path = os.path.join(self.datapath, file_name)
             pose_raw = np.load(full_path)
+            # if 'P11' in file_name:
+            #     continue
 
             if do_offset:
                 # get the offset and return the final pose

@@ -12,6 +12,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--do_recognition', action='store_true', help='Enable action recognition motion classifier')
         self.parser.add_argument('--do_align', action='store_true', help='Calculate align loss')
         self.parser.add_argument('--do_trajec_align', action='store_true', help='Calculate trajectory align loss')
+        self.parser.add_argument('--optim_seperate', action='store_true', help='Calculate trajectory align loss')
 
         self.parser.add_argument('--use_geo_loss', action='store_true', help='Calculate align loss')
         self.parser.add_argument('--lambda_trajec', type=float, default=0.8, help='Calculate align loss')
