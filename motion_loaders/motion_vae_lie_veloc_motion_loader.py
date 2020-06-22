@@ -33,7 +33,8 @@ class MotionVAEVelocGeneratedDataset(Dataset):
                                                  opt.batch_size, device)
 
         self.decoder = vae_models.DecoderGRULieV2(opt.input_size + opt.dim_z, opt.output_size, opt.hidden_size,
-                                             opt.decoder_hidden_layers, opt.batch_size, device)
+                                             opt.decoder_hidden_layers, opt.batch_size, device, use_hdl=opt.use_hdl,
+                                                  do_all_parent=opt.do_all_parent, kinematic_chains=kinematic_chain)
 
         self.prior_net.load_state_dict(model['prior_net'])
         self.veloc_net.load_state_dict(model['veloc_net'])

@@ -32,9 +32,12 @@ class BaseOptions():
         self.parser.add_argument('--decoder_hidden_layers', type=int, default=2, help='Layers of GRU in decoder net')
         self.parser.add_argument('--d_hidden_layers', type=int, default=2, help='Layers of GRU in discriminators')
 
-        self.parser.add_argument('--use_velocity', action="store_true", help="Use velocity estimation network")
         self.parser.add_argument('--use_vel_S', action="store_true", help="Use simple velocity estimation network")
         self.parser.add_argument('--use_vel_H', action="store_true", help="Use hierarchical velocity estimation network")
+        self.parser.add_argument('--use_hdl', action="store_true",
+                                 help="Use hierarchical dense layer")
+        self.parser.add_argument('--do_all_parent', action="store_true",
+                                 help="Use all parents in hdl")
 
         self.parser.add_argument('--do_relative', action="store_true",
                                  help="Use hierarchical velocity estimation network")
@@ -64,6 +67,8 @@ class BaseOptions():
             print('%s: %s' % (str(k), str(v)))
         print('-------------- End ----------------')
         if self.isTrain:
+            self.opt.kld_schedule_start = int(self.opt.kld_schedule_range.split('-')[0])
+            self.opt.kld_schedule_end = int(self.opt.kld_schedule_range.split('-')[1])
             # save to the disk
             expr_dir = os.path.join(self.opt.checkpoints_dir, self.opt.dataset_type, self.opt.name)
             if not os.path.exists(expr_dir):

@@ -24,7 +24,15 @@ if __name__ == "__main__":
     model_file_path = os.path.join(opt.model_path, opt.which_epoch + '.tar')
     result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name)
 
-    if opt.dataset_type == "shihao":
+    if opt.dataset_type == "humanact13":
+        dataset_path = "./dataset/humanact13"
+        input_size = 72
+        joints_num = 24
+        label_dec = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        raw_offsets = paramUtil.shihao_raw_offsets
+        kinematic_chain = paramUtil.shihao_kinematic_chain
+        enumerator = paramUtil.shihao_coarse_action_enumerator
+    elif opt.dataset_type == "shihao":
         dataset_path = "./dataset/pose"
         pkl_path = './dataset/pose_shihao_merge'
         input_size = 72
@@ -98,6 +106,8 @@ if __name__ == "__main__":
             data = dataset.MotionFolderDatasetShihaoV2(opt.clip_set, dataset_path, pkl_path, opt,
                                                        lie_enforce=opt.lie_enforce, raw_offsets=raw_offsets,
                                                        kinematic_chain=kinematic_chain)
+        elif opt.dataset_type == 'humanact13':
+            data = dataset.MotionFolderDatasetHumanAct13(dataset_path, opt, lie_enforce=opt.lie_enforce)
         elif opt.dataset_type == 'ntu_rgbd_vibe':
             data = dataset.MotionFolderDatasetNtuVIBE(file_prefix, motion_desc_file, labels, opt, joints_num=joints_num,
                                                       offset=True, extract_joints=paramUtil.kinect_vibe_extract_joints)
@@ -111,7 +121,8 @@ if __name__ == "__main__":
         trainer = Trainer(None, opt, device)
 
     if opt.do_random:
-        fake_motion, classes = trainer.evaluate3(prior_net, decoder, opt.num_samples)
+        fake_motion, classes = trainer.evaluate(prior_net, decoder, opt.num_samples)
+        fake_motion = fake_motion.cpu().numpy()
     else:
         categories = np.arange(dim_category).repeat(opt.replic_times, axis=0)
         # categories = np.arange(1).repeat(opt.replic_times, axis=0)
@@ -119,6 +130,7 @@ if __name__ == "__main__":
         num_samples = categories.shape[0]
         category_oh, classes = trainer.get_cate_one_hot(categories)
         fake_motion, _ = trainer.evaluate(prior_net, decoder, num_samples, category_oh)
+        fake_motion = fake_motion.cpu().numpy()
 
     print(fake_motion.shape)
     # print(fake_motion[:, 0, :2])
@@ -141,7 +153,7 @@ if __name__ == "__main__":
         # motion_mat[:, :, 2] *= -1
         np.save(os.path.join(keypoint_path, class_type + str(i) + '_3d.npy'), motion_mat)
 
-        if opt.dataset_type == "shihao":
+        if opt.dataset_type == "shihao" or opt.dataset_type == "humanact13":
             pose_tree = paramUtil.smpl_tree
 
             # offset = np.tile(np.array([-0.43391575,  0.31606525,  2.57938163]), (motion_orig.shape[0], 24, 1))
@@ -169,7 +181,8 @@ if __name__ == "__main__":
             motion_mat[:, :, 2] *= -1
             plot_3d_motion(motion_mat, pose_tree, class_type, file_name, interval=150)
             '''
-            plot_3d_motion_v2(motion_mat, kinematic_chain, save_path=file_name, interval=80)
+            ground_trajec = motion_mat[:, 0, :]
+            plot_3d_motion_with_trajec(motion_mat, kinematic_chain, save_path=file_name, interval=80, trajec2=ground_trajec)
 
         elif opt.dataset_type == "ntu_rgbd":
             motion_mat = mt.swap_xz(motion_mat)

@@ -115,7 +115,8 @@ if __name__ == "__main__":
                                              opt.batch_size, device)
 
     decoder = vae_models.DecoderGRULieV2(opt.input_size + opt.dim_z, opt.output_size, opt.hidden_size,
-                                         opt.decoder_hidden_layers, opt.batch_size, device)
+                                         opt.decoder_hidden_layers, opt.batch_size, device, use_hdl=opt.use_hdl,
+                                         do_all_parent=opt.do_all_parent, kinematic_chains=kinematic_chain)
 
     pc_prior = sum(param.numel() for param in prior_net.parameters())
     print(prior_net)

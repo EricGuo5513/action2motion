@@ -189,9 +189,9 @@ def plot_3d_motion_with_trajec(motion, kinematic_tree, save_path, interval=50, t
     matplotlib.use('Agg')
 
     def init():
-        # ax.set_xlabel('x')
-        # ax.set_ylabel('y')
-        # ax.set_zlabel('z')
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
         ax.set_ylim(-1, 1)
         ax.set_xlim(-1, 1)
         ax.set_zlim(-1, 1)
@@ -215,9 +215,9 @@ def plot_3d_motion_with_trajec(motion, kinematic_tree, save_path, interval=50, t
         ax.collections = []
         ax.view_init(elev=110, azim=90)
         if trajec1 is not None:
-            ax.plot3D(trajec1[:, 0], trajec1[:, 1], trajec1[:, 2], linewidth=2.0, color='green')
+            ax.plot3D(trajec1[:index+1, 0], trajec1[:index+1, 1], trajec1[:index+1, 2], linewidth=2.0, color='green')
         if trajec2 is not None:
-            ax.plot3D(trajec2[:, 0], trajec2[:, 1], trajec2[:, 2], linewidth=2.0, color='blue')
+            ax.plot3D(trajec2[:index+1, 0], trajec2[:index+1, 1], trajec2[:index+1, 2], linewidth=2.0, color='blue')
         for chain, color in zip(kinematic_tree, colors):
             ax.plot3D(motion[index, chain, 0], motion[index, chain, 1], motion[index, chain, 2], linewidth=4.0, color=color)
         # plt.axis('off')

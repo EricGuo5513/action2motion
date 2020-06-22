@@ -99,7 +99,8 @@ if __name__ == "__main__":
                                              opt.batch_size, device)
 
     decoder = vae_models.DecoderGRULieV2(opt.input_size + opt.dim_z, opt.output_size, opt.hidden_size,
-                                         opt.decoder_hidden_layers, opt.batch_size, device)
+                                         opt.decoder_hidden_layers, opt.batch_size, device, use_hdl=opt.use_hdl,
+                                         do_all_parent=opt.do_all_parent, kinematic_chains=kinematic_chain)
 
     prior_net.load_state_dict(model['prior_net'])
     veloc_net.load_state_dict(model['veloc_net'])
@@ -170,7 +171,8 @@ if __name__ == "__main__":
 
         if opt.dataset_type == "shihao" or opt.dataset_type == "humanact13":
             pose_tree = paramUtil.smpl_tree
-            plot_3d_motion_v2(motion_mat, kinematic_chain, save_path=file_name, interval=80)
+            ground_trajec = motion_mat[:, 0, :]
+            plot_3d_motion_with_trajec(motion_mat, kinematic_chain, save_path=file_name, interval=80, trajec1=ground_trajec)
 
         elif opt.dataset_type == "ntu_rgbd":
             motion_mat = mt.swap_xz(motion_mat)

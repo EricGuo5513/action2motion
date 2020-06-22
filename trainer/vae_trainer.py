@@ -75,9 +75,9 @@ class Trainer(object):
         return torch.Tensor(t.size()).fill_(val).requires_grad_(False).to(self.device)
 
     def kld_weight_scheduler(self, iter_state, start_weight):
-        intervals = (self.opt.iters - self.opt.start_increase_iter) / self.opt.update_interval
-        increase_rate = (self.opt.end_lambda_kld - start_weight) / intervals
-        if iter_state > self.opt.start_increase_iter:
+        steps = (self.opt.kld_schedule_end - self.opt.kld_schedule_start) / self.opt.update_interval
+        increase_rate = (self.opt.end_lambda_kld - start_weight) / steps
+        if iter_state >= self.opt.kld_schedule_start and iter_state <= self.opt.kld_schedule_end:
             self.opt.lambda_kld += increase_rate
             # print("Current KLD weight: %.5f" % (self.opt.lambda_kld))
 
@@ -527,7 +527,7 @@ class TrainerLie(Trainer):
                 real_joints = real_joints[:num_samples]
             # (batch_size, motion_length, joints_num, 3)
             real_joints = real_joints[:, 0, :].view(num_samples, -1, 3)
-            real_joints = real_joints.to(self.device)
+            real_joints = self.Tensor(real_joints.size()).copy_(real_joints)
             generated_batch = []
             for i in range(self.opt.motion_length):
                 # (batch_size, joints_num, 3)
@@ -644,8 +644,11 @@ class TrainerLieV2(Trainer):
         self.Tensor = torch.Tensor if self.opt.gpu_id is None else torch.cuda.FloatTensor
         self.lie_skeleton = LieSkeleton(self.raw_offsets, kinematic_chain, self.Tensor)
         if self.opt.isTrain:
-            self.recon_criterion = nn.MSELoss()
+            # self.recon_criterion = nn.MSELoss()
             self.l2_trajec = nn.MSELoss()
+
+    def recon_criterion(self, pred_vec, ground_vec):
+        return nn.MSELoss(pred_vec, ground_vec)
 
     def train(self, prior_net, posterior_net, decoder, veloc_net,
               opt_prior_net, opt_posterior_net, opt_decoder, opt_veloc_net, sample_true):
@@ -920,6 +923,18 @@ class TrainerLieV2(Trainer):
 
 
 class TrainerLieV3(TrainerLieV2):
+    # joint wise loss
+    def recon_criterion(self, pred_vec, ground_vec):
+        mse_loss = nn.MSELoss()
+        num_joints = int(pred_vec.shape[-1] / 3)
+        final_loss = 0
+        for i in range(num_joints):
+            s_ind = 3 * i
+            e_ind = 3 * i + 3
+            final_loss += mse_loss(pred_vec[..., s_ind:e_ind], ground_vec[..., s_ind:e_ind])
+        final_loss = final_loss / num_joints
+        return final_loss
+
     def train(self, prior_net, posterior_net, decoder, veloc_net,
               opt_prior_net, opt_posterior_net, opt_decoder, opt_veloc_net, sample_true):
         opt_prior_net.zero_grad()

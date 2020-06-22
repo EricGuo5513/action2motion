@@ -33,7 +33,6 @@ class VelocityNetwork(nn.Module):
             self.hidden[i] = self.gru[i](h_in, self.hidden[i])
             h_in = self.hidden[i]
         output = self.linear(h_in)
-        output = nn.LeakyReLU(negative_slope=0.1)(output)
         return output
 
 
@@ -54,11 +53,10 @@ class VelocityNetwork_Sim(nn.Module):
 
     def forward(self, inputs):
         h_1 = self.linear1(inputs)
-        h_1 = nn.LeakyReLU(negative_slope=0.1)(h_1)
+        h_1 = torch.relu(h_1)
         h_2 = self.linear2(h_1)
-        h_2 = nn.LeakyReLU(negative_slope=0.1)(h_2)
-        h_3 = self.linear3(h_2)
-        output = nn.LeakyReLU(negative_slope=0.1)(h_3)
+        h_2 = torch.relu(h_2)
+        output = self.linear3(h_2)
         return output
 
 
@@ -91,3 +89,47 @@ class VelocityNetworkHierarchy(nn.Module):
         h = nn.LeakyReLU(negative_slope=0.1)(h)
         output = self.out_linear(h)
         return output
+
+
+class HierarchicalDenseLayer(nn.Module):
+    def __init__(self, context_size, chains, num_joints, do_all_parent=False):
+        super(HierarchicalDenseLayer, self).__init__()
+        self._kinematic_chains = chains
+
+        self.PI = 3.1415926
+
+        self.context_size = context_size
+        self.do_all_parent = do_all_parent
+        self.num_joints = num_joints
+        self.construct_net()
+
+    def construct_net(self):
+        linear_list = [None] * self.num_joints
+        linear_list[0] = nn.Linear(self.context_size, 3)
+        for chain in self._kinematic_chains:
+            for j in range(1, len(chain)):
+                if self.do_all_parent:
+                    linear_list[chain[j]] = nn.Linear(self.context_size + j * 3, 3)
+                else:
+                    linear_list[chain[j]] = nn.Linear(self.context_size + 3, 3)
+        self.linears = nn.ModuleList(linear_list)
+
+    def forward(self, context_vec):
+        joint_list = [None] * self.num_joints
+        # root joint
+        outputs = self.linears[0](context_vec)
+        joint_list[0] = torch.tanh(outputs) * self.PI
+
+        for chain in self._kinematic_chains:
+            parent_preds = [context_vec, joint_list[chain[0]]]
+            for j in range(1, len(chain)):
+                if self.do_all_parent:
+                    inputs = torch.cat(parent_preds, dim=-1)
+                else:
+                    inputs = torch.cat([context_vec, joint_list[chain[j-1]]], dim=-1)
+
+                outputs = self.linears[chain[j]](inputs)
+                joint_list[chain[j]] = torch.tanh(outputs) * self.PI
+                parent_preds.append(joint_list[chain[j]])
+        pose_vec = torch.cat(joint_list, dim=-1)
+        return pose_vec

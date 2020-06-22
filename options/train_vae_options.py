@@ -26,7 +26,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--lambda_recognition', type=float, default=0.5, help='Weight of recognition loss')
 
         self.parser.add_argument('--do_kld_schedule', action='store_true', help='Activate KLD scheduler')
-        self.parser.add_argument('--start_increase_iter', type=int, default=0, help='From which iteration we '
+        self.parser.add_argument('--kld_schedule_range', type=str, default='0-0', help='From which iteration we '
                                                                                       'start increase kld weight')
         self.parser.add_argument('--end_lambda_kld', type=float, default=0.01, help='Termination of kld weight while scheduling')
 
