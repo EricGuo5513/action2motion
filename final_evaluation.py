@@ -200,8 +200,11 @@ def animation_4_user_study(save_dir, motion_loaders):
 
 if __name__ == '__main__':
 
-    dataset_opt_path = './checkpoints/vae/humanact13/vae_veloc_f0001_t01_optim_seperate/opt.txt'
+    dataset_opt_path = './checkpoints/vae/mocap/vae_veloc_f0001_t01_trj5_rela_hdl/opt.txt'
     eval_motion_loaders = {
+        'vae_veloc_f0001_t01_trj5_rela_hdl': lambda num_motions, device: get_motion_loader(
+            './checkpoints/vae/mocap/vae_veloc_f0001_t01_trj5_rela_hdl/opt.txt',
+            num_motions, 128, device, ground_truth_motion_loader),
         # 'vae_veloc_f0001_t01_optim_seperate_relative': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/humanact13/vae_veloc_f0001_t01_optim_seperate_relative/opt.txt',
         #     num_motions, 128, device, ground_truth_motion_loader),
@@ -214,9 +217,9 @@ if __name__ == '__main__':
         #'vanilla_vae_lie_mse': lambda num_motions, device: get_motion_loader(
         #    './checkpoints/vae/shihao/vanilla_vae_lie_mse/opt.txt',
         #    num_motions, 36, device, ground_truth_motion_loader),
-        'vanilla_vae_lie_mse_kld001': lambda num_motions, device: get_motion_loader(
-           './checkpoints/vae/humanact13/vanilla_vae_lie_mse_kld001/opt.txt',
-           num_motions, 128, device, ground_truth_motion_loader),
+        # 'vanilla_vae_lie_mse_kld001': lambda num_motions, device: get_motion_loader(
+        #    './checkpoints/vae/humanact13/vanilla_vae_lie_mse_kld001/opt.txt',
+        #    num_motions, 128, device, ground_truth_motion_loader),
         # 'vanilla_vae_lie_mse_kld001': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/shihao/vanilla_vae_lie_mse_kld001/opt.txt',
         #     num_motions, 128, device, ground_truth_motion_loader),
@@ -258,6 +261,6 @@ if __name__ == '__main__':
     animation_4_user_study(save_dir, motion_loaders)
     
     '''
-    log_file = 'final_evaluation_humanact.log'
+    log_file = 'final_evaluation_mocap_veloc.log'
     evaluation(log_file)
 

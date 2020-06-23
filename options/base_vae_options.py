@@ -30,6 +30,7 @@ class BaseOptions():
         self.parser.add_argument('--prior_hidden_layers', type=int, default=1, help='Layers of GRU in prior net')
         self.parser.add_argument('--posterior_hidden_layers', type=int, default=1, help='Layers of GRU in posterior net')
         self.parser.add_argument('--decoder_hidden_layers', type=int, default=2, help='Layers of GRU in decoder net')
+        self.parser.add_argument('--veloc_hidden_layers', type=int, default=1, help='Layers of GRU in decoder net')
         self.parser.add_argument('--d_hidden_layers', type=int, default=2, help='Layers of GRU in discriminators')
 
         self.parser.add_argument('--use_vel_S', action="store_true", help="Use simple velocity estimation network")

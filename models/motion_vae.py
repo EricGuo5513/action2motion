@@ -110,24 +110,26 @@ class DecoderGRULieV2(DecoderGRU):
                                             device)
         self.use_hdl = use_hdl
         if self.use_hdl:
-            self.output_lie = HierarchicalDenseLayer(output_size, kinematic_chains,
+            self.output_lie = HierarchicalDenseLayer(hidden_size, kinematic_chains,
                                                      num_joints=int(output_size/3), do_all_parent=do_all_parent)
         else:
-            self.output_lie = nn.Linear(output_size, output_size)
-        self.vel_unit = nn.Linear(output_size, 10)
+            self.output_lie = nn.Linear(hidden_size, output_size)
+        self.vel_unit = nn.Linear(hidden_size, 20)
         self.PI = 3.1415926
 
     def forward(self, inputs):
-        hidden_output, h_mid = super(DecoderGRULieV2, self).forward(inputs)
-
-        hidden_in = torch.tanh(hidden_output)
+        embedded = self.embed(inputs.view(-1, self.input_size))
+        h_in = embedded
+        for i in range(self.n_layers):
+            self.hidden[i] = self.gru[i](h_in, self.hidden[i])
+            h_in = self.hidden[i]
+        hidden_in = h_in
 
         if self.use_hdl:
-            lie_out = self.output_lie(hidden_in * self.PI)
+            lie_out = self.output_lie(hidden_in)
         else:
             lie_out = self.output_lie(hidden_in)
             lie_out = torch.tanh(lie_out) * self.PI
 
         vel_out = self.vel_unit(hidden_in)
-        vel_out = torch.tanh(vel_out)
-        return lie_out, vel_out, h_mid
+        return lie_out, vel_out, hidden_in

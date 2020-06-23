@@ -91,11 +91,11 @@ if __name__ == "__main__":
                                        opt.prior_hidden_layers, opt.batch_size, device)
 
     if opt.use_vel_S:
-        veloc_net = networks.VelocityNetwork_Sim(input_size * 2 + 10, 3, opt.hidden_size)
+        veloc_net = networks.VelocityNetwork_Sim(input_size * 2 + 20, 3, opt.hidden_size)
     elif opt.use_vel_H:
         veloc_net = networks.VelocityNetworkHierarchy(3, kinematic_chain)
     else:
-        veloc_net = networks.VelocityNetwork(input_size * 2 + 10, 3, opt.hidden_size, opt.veloc_hidden_layers,
+        veloc_net = networks.VelocityNetwork(input_size * 2 + 20, 3, opt.hidden_size, opt.veloc_hidden_layers,
                                              opt.batch_size, device)
 
     decoder = vae_models.DecoderGRULieV2(opt.input_size + opt.dim_z, opt.output_size, opt.hidden_size,

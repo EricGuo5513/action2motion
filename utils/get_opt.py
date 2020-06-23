@@ -152,7 +152,7 @@ def get_opt(opt_path, num_motions, device):
     else:
         opt.input_size = opt.input_size_raw + opt.dim_category
 
-    opt.veloc_input_size = opt.input_size_raw * 2 + 10
+    opt.veloc_input_size = opt.input_size_raw * 2 + 20
 
     opt.output_size = opt.input_size_raw
     
