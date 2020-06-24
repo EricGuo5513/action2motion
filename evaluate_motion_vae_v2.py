@@ -197,4 +197,6 @@ if __name__ == "__main__":
             plot_3d_motion_v2(motion_mat, kinematic_chain, save_path=file_name, interval=80)
         elif opt.dataset_type == "mocap":
             pose_tree = paramUtil.kinect_tree_mocap
-            plot_3d_motion(motion_mat, pose_tree, class_type, file_name, interval=150)
+            ground_trajec = motion_mat[:, 0, :]
+            plot_3d_motion_with_trajec(motion_mat, kinematic_chain, save_path=file_name, interval=80,
+                                       trajec1=ground_trajec, dataset="mocap")

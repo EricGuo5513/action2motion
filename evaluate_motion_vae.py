@@ -124,7 +124,7 @@ if __name__ == "__main__":
         fake_motion, classes = trainer.evaluate(prior_net, decoder, opt.num_samples)
         fake_motion = fake_motion.cpu().numpy()
     else:
-        categories = np.arange(dim_category).repeat(opt.replic_times, axis=0)
+        categories = np.arange(opt.dim_category).repeat(opt.replic_times, axis=0)
         # categories = np.arange(1).repeat(opt.replic_times, axis=0)
         # categories = np.array([6]).repeat(opt.replic_times, axis=0)
         num_samples = categories.shape[0]
@@ -207,4 +207,7 @@ if __name__ == "__main__":
             plot_3d_motion_v2(motion_mat, kinematic_chain, save_path=file_name, interval=80)
         elif opt.dataset_type == "mocap":
             pose_tree = paramUtil.kinect_tree_mocap
-            plot_3d_motion(motion_mat, pose_tree, class_type, file_name, interval=150)
+            # plot_3d_motion(motion_mat, pose_tree, class_type, file_name, interval=150)
+            ground_trajec = motion_mat[:, 0, :]
+            plot_3d_motion_with_trajec(motion_mat, kinematic_chain, save_path=file_name, interval=80,
+                                       trajec1=ground_trajec, dataset="mocap")

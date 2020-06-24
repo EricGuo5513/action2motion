@@ -185,16 +185,21 @@ def plot_3d_motion_v2(motion, kinematic_tree, save_path, interval=50):
     ani.save(save_path, writer='pillow')
     plt.close()
 
-def plot_3d_motion_with_trajec(motion, kinematic_tree, save_path, interval=50, trajec1=None, trajec2=None):
+def plot_3d_motion_with_trajec(motion, kinematic_tree, save_path, interval=50, trajec1=None, trajec2=None, dataset=None):
     matplotlib.use('Agg')
 
     def init():
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
-        ax.set_ylim(-1, 1)
-        ax.set_xlim(-1, 1)
-        ax.set_zlim(-1, 1)
+        if dataset == "mocap":
+            ax.set_ylim(-1.5, 1.5)
+            ax.set_xlim(0, 3)
+            ax.set_zlim(-1.5, 1.5)
+        else:
+            ax.set_ylim(-1, 1)
+            ax.set_xlim(-1, 1)
+            ax.set_zlim(-1, 1)
         # ax.set_ylim(-1.0, 0.2)
         # ax.set_xlim(-0.2, 1.0)
         # ax.set_zlim(-1.0, 0.4)
@@ -213,7 +218,10 @@ def plot_3d_motion_with_trajec(motion, kinematic_tree, save_path, interval=50, t
     def update(index):
         ax.lines = []
         ax.collections = []
-        ax.view_init(elev=110, azim=90)
+        if dataset == "mocap":
+            ax.view_init(elev=110, azim=-90)
+        else:
+            ax.view_init(elev=110, azim=90)
         if trajec1 is not None:
             ax.plot3D(trajec1[:index+1, 0], trajec1[:index+1, 1], trajec1[:index+1, 2], linewidth=2.0, color='green')
         if trajec2 is not None:

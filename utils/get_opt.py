@@ -17,6 +17,7 @@ opt_conversion = {
     'prior_hidden_layers': int,
     'posterior_hidden_layers': int,
     'decoder_hidden_layers': int,
+    'veloc_hidden_layers': int,
     'd_hidden_layers': int,
     'isTrain': lambda s: s == 'True',
     

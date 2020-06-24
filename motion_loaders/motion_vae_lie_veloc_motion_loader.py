@@ -30,7 +30,7 @@ class MotionVAEVelocGeneratedDataset(Dataset):
             self.veloc_net = networks.VelocityNetwork_Sim(opt.veloc_input_size, 3, opt.hidden_size)
         else:
             self.veloc_net = networks.VelocityNetwork(opt.veloc_input_size, 3, opt.hidden_size, opt.veloc_hidden_layers,
-                                                 opt.batch_size, device)
+                                                      opt.batch_size, device)
 
         self.decoder = vae_models.DecoderGRULieV2(opt.input_size + opt.dim_z, opt.output_size, opt.hidden_size,
                                              opt.decoder_hidden_layers, opt.batch_size, device, use_hdl=opt.use_hdl,
