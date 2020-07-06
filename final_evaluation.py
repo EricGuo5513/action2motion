@@ -200,13 +200,17 @@ def animation_4_user_study(save_dir, motion_loaders):
 
 if __name__ == '__main__':
 
+    # dataset_opt_path = './checkpoints/vae/mocap/vae_velocR_f0001_t01_trj10_rela/opt.txt'
     dataset_opt_path = './checkpoints/vae/humanact13/vae_velocR_f0001_t005_trj10_rela/opt.txt'
     eval_motion_loaders = {
-        'vae_velocR_f0001_t005_trj10_rela': lambda num_motions, device: get_motion_loader(
-            './checkpoints/vae/humanact13/vae_velocR_f0001_t005_trj10_rela/opt.txt',
-            num_motions, 128, device, ground_truth_motion_loader),
+        # 'vae_velocR_f0001_t01_trj10_rela': lambda num_motions, device: get_motion_loader(
+        #     './checkpoints/vae/mocap/vae_velocR_f0001_t01_trj10_rela/opt.txt',
+        #     num_motions, 128, device, ground_truth_motion_loader),
         # 'vae_velocS_f0001_t01_trj10_rela': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/mocap/vae_velocS_f0001_t01_trj10_rela/opt.txt',
+        #     num_motions, 128, device, ground_truth_motion_loader),
+        # 'vae_velocR_f0001_t005_trj10_rela': lambda num_motions, device: get_motion_loader(
+        #     './checkpoints/vae/humanact13/vae_velocR_f0001_t005_trj10_rela/opt.txt',
         #     num_motions, 128, device, ground_truth_motion_loader),
         # 'vae_veloc_f0001_t01_optim_seperate_relative': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/humanact13/vae_veloc_f0001_t01_optim_seperate_relative/opt.txt',
@@ -214,11 +218,11 @@ if __name__ == '__main__':
         # 'vae_veloc_f0001_t01_relative': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/humanact13/vae_veloc_f0001_t01_relative/opt.txt',
         #     num_motions, 128, device, ground_truth_motion_loader),
-        # 'vae_veloc_f0001_t01_trajc10': lambda num_motions, device: get_motion_loader(
-        # './checkpoints/vae/humanact13/vae_veloc_f0001_t01_trajc10/opt.txt',
-        # num_motions, 128, device, ground_truth_motion_loader)
-        #'vanilla_vae_lie_mse': lambda num_motions, device: get_motion_loader(
-        #    './checkpoints/vae/shihao/vanilla_vae_lie_mse/opt.txt',
+        'vae_velocR_f0001_t005_trj10_rela': lambda num_motions, device: get_motion_loader(
+        './checkpoints/vae/humanact13/vae_velocR_f0001_t005_trj10_rela/opt.txt',
+        num_motions, 128, device, ground_truth_motion_loader),
+        # 'vanilla_vae_lie_mse_kld01': lambda num_motions, device: get_motion_loader(
+        #    './checkpoints/vae/mocap/vanilla_vae_lie_mse_kld01/opt.txt',
         #    num_motions, 36, device, ground_truth_motion_loader),
         'vanilla_vae_lie_mse_kld001': lambda num_motions, device: get_motion_loader(
            './checkpoints/vae/humanact13/vanilla_vae_lie_mse_kld001/opt.txt',
@@ -245,9 +249,9 @@ if __name__ == '__main__':
         #      num_motions, 128, device),
     }
 
-    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-    torch.cuda.set_device(2)
-    num_motions = 3000
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    torch.cuda.set_device(0)
+    num_motions = 2000
 
     dataset_opt = get_opt(dataset_opt_path, num_motions, device)
     gru_classifier_for_fid = load_classifier_for_fid(dataset_opt, device)
