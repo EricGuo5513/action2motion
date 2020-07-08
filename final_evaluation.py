@@ -215,11 +215,11 @@ if __name__ == '__main__':
         # 'vae_veloc_f0001_t01_optim_seperate_relative': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/humanact13/vae_veloc_f0001_t01_optim_seperate_relative/opt.txt',
         #     num_motions, 128, device, ground_truth_motion_loader),
-        # 'vae_veloc_f0001_t01_relative': lambda num_motions, device: get_motion_loader(
-        #     './checkpoints/vae/humanact13/vae_veloc_f0001_t01_relative/opt.txt',
-        #     num_motions, 128, device, ground_truth_motion_loader),
-        'vae_velocR_f0001_t005_trj10_rela': lambda num_motions, device: get_motion_loader(
-        './checkpoints/vae/humanact13/vae_velocR_f0001_t005_trj10_rela/opt.txt',
+        'vae_velocS_f0001_t001_trj10_rela': lambda num_motions, device: get_motion_loader(
+            './checkpoints/vae/humanact13/vae_velocS_f0001_t001_trj10_rela/opt.txt',
+            num_motions, 128, device, ground_truth_motion_loader),
+        'vae_velocR_f0001_t001_trj10_rela': lambda num_motions, device: get_motion_loader(
+        './checkpoints/vae/humanact13/vae_velocR_f0001_t001_trj10_rela/opt.txt',
         num_motions, 128, device, ground_truth_motion_loader),
         # 'vanilla_vae_lie_mse_kld01': lambda num_motions, device: get_motion_loader(
         #    './checkpoints/vae/mocap/vanilla_vae_lie_mse_kld01/opt.txt',

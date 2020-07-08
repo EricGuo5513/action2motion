@@ -24,6 +24,17 @@ if __name__ == "__main__":
     model_file_path = os.path.join(opt.model_path, opt.which_epoch + '.tar')
     result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name)
 
+    latent_path = ""
+    motion_path = ""
+
+    latents = np.load(latent_path)
+    motion = np.load(motion_path)
+    latents = torch.from_numpy(latents).float().to(device)
+    motion = torch.from_numpy(motion).float().to(device)
+    motion_mat = motion.unsqueeze_(0)
+
+    action_indx = 0
+
     if opt.dataset_type == "humanact13":
         dataset_path = "./dataset/humanact13"
         input_size = 72
@@ -110,39 +121,21 @@ if __name__ == "__main__":
     decoder.to(device)
     veloc_net.to(device)
 
-    if opt.dataset_type=='shihao':
-        data = dataset.MotionFolderDatasetShihaoV2(opt.clip_set, dataset_path, pkl_path, opt,
-                                                   lie_enforce=opt.lie_enforce, raw_offsets=raw_offsets,
-                                                   kinematic_chain=kinematic_chain)
-    elif opt.dataset_type == 'humanact13':
-        data = dataset.MotionFolderDatasetHumanAct13(dataset_path, opt, lie_enforce=opt.lie_enforce)
-    elif opt.dataset_type == 'ntu_rgbd_vibe':
-        data = dataset.MotionFolderDatasetNtuVIBE(file_prefix, motion_desc_file, labels, opt, joints_num=joints_num,
-                                                  offset=True, extract_joints=paramUtil.kinect_vibe_extract_joints)
-    elif opt.dataset_type == 'mocap':
-        data = dataset.MotionFolderDatasetMocap(clip_path, dataset_path, opt)
-    motion_dataset = dataset.MotionDataset(data, opt)
-    motion_loader = DataLoader(motion_dataset, batch_size=opt.batch_size, drop_last=True, num_workers=2,
-                               shuffle=True)
     if opt.do_relative:
-        trainer = TrainerLieV3(motion_loader, opt, device, raw_offsets, kinematic_chain)
+        trainer = TrainerLieV3(None, opt, device, raw_offsets, kinematic_chain)
     else:
-        trainer = TrainerLieV2(motion_loader, opt, device, raw_offsets, kinematic_chain)
+        trainer = TrainerLieV2(None, opt, device, raw_offsets, kinematic_chain)
 
     dim_category = len(data.labels)
 
-    if opt.do_random:
-        fake_motion, classes, latents, logvar = trainer.evaluate(prior_net, decoder, veloc_net, opt.num_samples)
-        fake_motion = fake_motion.numpy()
-    else:
-        categories = np.arange(dim_category).repeat(opt.replic_times, axis=0)
-        # categories = np.arange(1).repeat(opt.replic_times, axis=0)
-        # categories = np.array([6]).repeat(opt.replic_times, axis=0)
-        # print(categories.shape)
-        num_samples = categories.shape[0]
-        category_oh, classes, latents = trainer.get_cate_one_hot(categories)
-        fake_motion, _, latents, logvar = trainer.evaluate(prior_net, decoder, veloc_net, num_samples, category_oh)
-        fake_motion = fake_motion.numpy()
+    categories = np.array([action_indx,]).repeat(opt.num_samples, axis=0)
+    category_oh, classes = trainer.get_cate_one_hot(categories)
+
+    fake_motion, _, latent_batch, logvar = trainer.evaluate_4_manip(prior_net, decoder, veloc_net, opt.num_samples, latents,
+                                                       opt.start_step, cate_one_hot=category_oh, real_joints=motion_mat)
+    fake_motion = fake_motion.numpy()
+    latent_batch = latent_batch.numpy()
+    logvar = logvar.numpy()
 
     print(fake_motion.shape)
     # print(fake_motion[:, 0, :2])
@@ -168,11 +161,6 @@ if __name__ == "__main__":
         motion_mat = motion_mat.reshape(-1, joints_num, 3)
         # motion_mat[:, :, 2] *= -1
         np.save(os.path.join(keypoint_path, class_type + str(i) + '_3d.npy'), motion_mat)
-        if opt.save_latent:
-            latents = latents.numpy()
-            logvar = logvar.numpy()
-            np.save(os.path.join(latents, class_type + str(i) + '_latent.npy'), latents)
-            np.save(os.path.join(logvar, class_type + str(i) + '_lgvar.npy'), latents)
 
         if opt.dataset_type == "shihao" or opt.dataset_type == "humanact13":
             pose_tree = paramUtil.smpl_tree
