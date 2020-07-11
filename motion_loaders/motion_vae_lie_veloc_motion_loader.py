@@ -74,7 +74,7 @@ class MotionVAEVelocGeneratedDataset(Dataset):
                 real_joints = torch.cat(real_joints_list, dim=0)
 
                 opt.num_samples = num_motions_batch
-                motions_output_batch, labels_output_batch = \
+                motions_output_batch, labels_output_batch, _, _ = \
                     self.trainer.evaluate(self.prior_net, self.decoder, self.veloc_net, opt.num_samples, real_joints=real_joints)
                 motions_output[(num_motions-num_motions_batch):num_motions, :, :] = motions_output_batch
                 labels_output[(num_motions-num_motions_batch):num_motions] = labels_output_batch

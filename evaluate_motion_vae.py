@@ -22,7 +22,7 @@ if __name__ == "__main__":
     opt.model_path = os.path.join(opt.save_root, 'model')
     opt.joints_path = os.path.join(opt.save_root, 'joints')
     model_file_path = os.path.join(opt.model_path, opt.which_epoch + '.tar')
-    result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name)
+    result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name + opt.name_ext)
 
     if opt.dataset_type == "humanact13":
         dataset_path = "./dataset/humanact13"

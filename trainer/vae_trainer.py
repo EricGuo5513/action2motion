@@ -85,9 +85,10 @@ class Trainer(object):
     @staticmethod
     def linear_interpolate(bins, low, high, tensor):
         lines = torch.linspace(0, 1, steps=bins)
-        results = torch.zeros(bins, low.shape[0], low.shape[1])
+        # print(low.shape)
+        results = torch.zeros(bins, low.shape[0])
         for i in range(bins):
-            results[i] = low * lines[i] + high * (1-lines[i])
+            results[i] = high * lines[i] + low * (1-lines[i])
         results = tensor(results.size()).copy_(results)
         return results
 
@@ -143,7 +144,7 @@ class Trainer(object):
         one_hot[np.arange(classes_to_generate.shape[0]), classes_to_generate] = 1
 
         # dim (num_samples, dim_category)
-        one_hot_motion = torch.from_numpy(one_hot).to(device).requires_grad_(False)
+        one_hot_motion = torch.from_numpy(one_hot).to(self.device).requires_grad_(False)
 
         return one_hot_motion, classes_to_generate
 
@@ -154,7 +155,7 @@ class Trainer(object):
         one_hot[np.arange(categories.shape[0]), classes_to_generate] = 1
 
         # dim (num_samples, dim_category)
-        one_hot_motion = torch.from_numpy(one_hot).to(device).requires_grad_(False)
+        one_hot_motion = torch.from_numpy(one_hot).to(self.device).requires_grad_(False)
 
         return one_hot_motion, classes_to_generate
 
@@ -339,7 +340,7 @@ class Trainer(object):
             # np.save('./logvar_p_l.npy', torch.cat(logvar_p_l, dim=1).cpu().numpy())
             # np.save('./h_mid_l.npy', torch.cat(h_mid_l, dim=1).cpu().numpy())
             # np.save('./generate_batch.npy', generate_batch.cpu().numpy())
-        return generate_batch.cpu(), classes_to_generate, None
+        return generate_batch.cpu(), classes_to_generate
 
     def trainIters(self, prior_net, posterior_net, decoder, motion_discriminator=None, motion_classifier=None):
         self.opt_decoder = optim.Adam(decoder.parameters(), lr=0.0002, betas=(0.9, 0.999), weight_decay=0.00001)
@@ -1216,7 +1217,7 @@ class TrainerLieV3(TrainerLieV2):
         # (batch_size, motion_len, 72)
         generate_batch = torch.cat(generate_batch, dim=1)
 
-        new_latent_batch = torch.cat(latent_batch, dim=1)
+        new_latent_batch = torch.cat(latent_list, dim=1)
         logvar_batch = torch.cat(logvar_list, dim=1)
         return generate_batch.cpu(), classes_to_generate, new_latent_batch.cpu(), logvar_batch.cpu()
 
@@ -1307,6 +1308,88 @@ class TrainerLieV3(TrainerLieV2):
         # (batch_size, motion_len, 72)
         generate_batch = torch.cat(generate_batch, dim=1)
 
-        new_latent_batch = torch.cat(latent_batch, dim=1)
+        new_latent_batch = torch.cat(latent_list, dim=1)
         logvar_batch = torch.cat(logvar_list, dim=1)
         return generate_batch.cpu(), classes_to_generate, new_latent_batch.cpu(), logvar_batch.cpu()
+
+    # elements in list shift steps must be in ascending order
+    def evaluate_4_shift(self, prior_net, decoder, veloc_net, num_samples, cate_oh_list, shift_steps, real_joints=None):
+        assert len(cate_oh_list) != len(shift_steps) - 1
+
+        prior_net.eval()
+        decoder.eval()
+        veloc_net.eval()
+        with torch.no_grad():
+
+            prior_vec = self.tensor_fill((num_samples, self.opt.pose_dim), 0)
+            prior_net.init_hidden(num_samples)
+            decoder.init_hidden(num_samples)
+            veloc_net.init_hidden(num_samples)
+
+            # sample real poses from dataset
+            if real_joints is None:
+                # real_joints (batch_size, motion_len, 72)
+                real_joints, cate_data = self.sample_real_motion_batch()
+
+            if real_joints.shape[0] < num_samples:
+                repeat_ratio = int(num_samples / real_joints.shape[0])
+                real_joints = real_joints.repeat((repeat_ratio, 1, 1))
+                pad_num = num_samples - real_joints.shape[0]
+                if pad_num != 0:
+                    real_joints = torch.cat((real_joints, real_joints[: pad_num]), dim=0)
+            else:
+                real_joints = real_joints[:num_samples]
+            real_poses = real_joints[:, 0, :]
+            real_poses = self.Tensor(real_poses.size()).copy_(real_poses)
+
+            latent_list = []
+            logvar_list = []
+
+            generate_batch = []
+            num_joints = int(real_poses.shape[-1] / 3)
+            # print(num_joints)
+            shift_steps = [0] + shift_steps + [self.opt.motion_length]
+            for i in range(0, self.opt.motion_length):
+                # print(prior_vec[:, :3].repeat(1, num_joints).shape)
+                # print(prior_vec.shape)
+
+                act_id = 0
+                while i > shift_steps[act_id+1]:
+                    act_id += 1
+
+                cate_one_hot = cate_oh_list[act_id]
+
+                prior_vec = prior_vec - prior_vec[:, :3].repeat(1, num_joints)
+                condition_vec = cate_one_hot
+                if self.opt.time_counter:
+                    time_counter = i / (self.opt.motion_length - 1)
+                    time_counter_vec = self.tensor_fill((num_samples, 1), time_counter)
+                    condition_vec = torch.cat((cate_one_hot, time_counter_vec), dim=1)
+                # print(prior_vec.shape, condition_vec.shape)
+                h = torch.cat((prior_vec, condition_vec), dim=1)
+
+                z_t_p, mu_p, logvar_p, h_in_p = prior_net(h)
+
+                h_mid = torch.cat((h, z_t_p), dim=1)
+                lie_out, vel_mid, h_in = decoder(h_mid)
+                pred_o_traj = self.pose_lie_2_joints(lie_out, real_poses, i == 0)
+                if i == 0:
+                    pred_joints = pred_o_traj
+                else:
+                    vel_in = torch.cat((prior_vec, pred_o_traj, vel_mid), dim=-1)
+                    vel_out = veloc_net(vel_in)
+                    pred_joints = pred_o_traj + vel_out.repeat(1, num_joints)
+                prior_vec = pred_joints
+                generate_batch.append(pred_joints.unsqueeze(1))
+                latent_list.append(z_t_p.unsqueeze(1))
+                logvar_list.append(logvar_p.unsqueeze(1))
+
+        for i in range(1, len(generate_batch)):
+            # current location equals to the relative location plus location of previous pose
+            generate_batch[i] = generate_batch[i] + generate_batch[i-1][:, :, :3].repeat(1, 1, num_joints)
+        # (batch_size, motion_len, 72)
+        generate_batch = torch.cat(generate_batch, dim=1)
+
+        new_latent_batch = torch.cat(latent_list, dim=1)
+        logvar_batch = torch.cat(logvar_list, dim=1)
+        return generate_batch.cpu(), None, new_latent_batch.cpu(), logvar_batch.cpu()

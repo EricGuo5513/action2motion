@@ -8,6 +8,22 @@ from options.evaluate_vae_options import *
 from dataProcessing import dataset
 from torch.utils.data import DataLoader
 
+
+def load_latent(path):
+    latent_path = path + "_latent.npy"
+    motion_path = path + "_3d.npy"
+
+    # latent_path = "./eval_results/diverse/mocap/vae_velocS_f0001_t01_trj10_rela_run10_s40/keypoint/Jump0_latent.npy"
+    # motion_path = "./eval_results/diverse/mocap/vae_velocS_f0001_t01_trj10_rela_run10_s40/keypoint/Jump0_3d.npy"
+
+    latents = np.load(latent_path)
+    motion = np.load(motion_path).reshape(opt.motion_length, -1)
+    latents = torch.from_numpy(latents).float().to(device)
+    motion = torch.from_numpy(motion).float().to(device)
+    motion_mat = motion.unsqueeze_(0)
+    return latents, motion_mat
+
+
 if __name__ == "__main__":
     parser = TestOptions()
     opt = parser.parse()
@@ -22,18 +38,21 @@ if __name__ == "__main__":
     opt.model_path = os.path.join(opt.save_root, 'model')
     opt.joints_path = os.path.join(opt.save_root, 'joints')
     model_file_path = os.path.join(opt.model_path, opt.which_epoch + '.tar')
-    result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name)
+    result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name + opt.name_ext)
 
-    latent_path = ""
-    motion_path = ""
+    if opt.do_interp:
+        path1 = "./eval_results/ablation/humanact13/vae_velocS_f0001_t001_trj10_rela_R1/keypoint/jump18"
+        path2 = "./eval_results/ablation/humanact13/vae_velocS_f0001_t001_trj10_rela/keypoint/jump16"
 
-    latents = np.load(latent_path)
-    motion = np.load(motion_path)
-    latents = torch.from_numpy(latents).float().to(device)
-    motion = torch.from_numpy(motion).float().to(device)
-    motion_mat = motion.unsqueeze_(0)
+        latents1, motion_mat1 = load_latent(path1)
+        latents2, motion_mat2 = load_latent(path2)
+    else:
+        # path = "./eval_results/diverse/humanact13/vae_velocS_f0001_t001_trj10_rela_jump47_s20/keypoint/jump0"
+        path = "./eval_results/ablation/mocap/vae_velocR_f0001_t01_trj10_rela/keypoint/Run14"
+        latents, motion_mat = load_latent(path)
 
-    action_indx = 0
+
+    action_indx = 2
 
     if opt.dataset_type == "humanact13":
         dataset_path = "./dataset/humanact13"
@@ -126,19 +145,35 @@ if __name__ == "__main__":
     else:
         trainer = TrainerLieV2(None, opt, device, raw_offsets, kinematic_chain)
 
-    dim_category = len(data.labels)
+    dim_category = len(label_dec)
 
-    categories = np.array([action_indx,]).repeat(opt.num_samples, axis=0)
+    if opt.do_interp:
+        categories = np.array([action_indx, ]).repeat(opt.interp_bins, axis=0)
+        print(motion_mat1.shape)
+    else:
+        categories = np.array([action_indx,]).repeat(opt.num_samples, axis=0)
+        print(motion_mat.shape)
     category_oh, classes = trainer.get_cate_one_hot(categories)
 
-    fake_motion, _, latent_batch, logvar = trainer.evaluate_4_manip(prior_net, decoder, veloc_net, opt.num_samples, latents,
-                                                       opt.start_step, cate_one_hot=category_oh, real_joints=motion_mat)
+    if opt.do_interp:
+        fake_motion, _, latent_batch, logvar = trainer.evaluate_4_interp(prior_net, decoder, veloc_net, opt.interp_bins,
+                                                                         latents1, latents2, opt.interp_step,
+                                                                         opt.interp_type, cate_one_hot=category_oh,
+                                                                         real_joints=motion_mat1)
+    else:
+        fake_motion, _, latent_batch, logvar = trainer.evaluate_4_manip(prior_net, decoder, veloc_net, opt.num_samples,
+                                                                        latents, opt.start_step,
+                                                                        cate_one_hot=category_oh,
+                                                                        real_joints=motion_mat)
     fake_motion = fake_motion.numpy()
     latent_batch = latent_batch.numpy()
     logvar = logvar.numpy()
 
     print(fake_motion.shape)
     # print(fake_motion[:, 0, :2])
+    b_img_name = os.path.join(result_path, "begin.png")
+    e_img_name = os.path.join(result_path, "end.png")
+
     for i in range(fake_motion.shape[0]):
         class_type = enumerator[label_dec[classes[i]]]
         motion_orig = fake_motion[i]
@@ -148,6 +183,7 @@ if __name__ == "__main__":
         if not os.path.exists(keypoint_path):
             os.makedirs(keypoint_path)
         file_name = os.path.join(result_path, class_type + str(i) + ".gif")
+        img_name = os.path.join(result_path, class_type + str(i) + ".png")
         '''
         offset = np.matlib.repmat(np.array([motion_orig[0, 0], motion_orig[0, 1], motion_orig[0, 2]]),
                                      motion_orig.shape[0], joints_num)
@@ -161,11 +197,19 @@ if __name__ == "__main__":
         motion_mat = motion_mat.reshape(-1, joints_num, 3)
         # motion_mat[:, :, 2] *= -1
         np.save(os.path.join(keypoint_path, class_type + str(i) + '_3d.npy'), motion_mat)
+        np.save(os.path.join(keypoint_path, class_type + str(i) + '_latent.npy'), latent_batch[i])
+        np.save(os.path.join(keypoint_path, class_type + str(i) + '_lgvar.npy'), logvar[i])
 
         if opt.dataset_type == "shihao" or opt.dataset_type == "humanact13":
             pose_tree = paramUtil.smpl_tree
             ground_trajec = motion_mat[:, 0, :]
             plot_3d_motion_with_trajec(motion_mat, kinematic_chain, save_path=file_name, interval=80, trajec1=ground_trajec)
+            plot_3d_pose_v2(img_name, kinematic_chain, motion_mat[0])
+            if i == 0:
+                motion_mat1 = motion_mat1.cpu().numpy().reshape(opt.motion_length, joints_num, 3)
+                motion_mat2 = motion_mat2.cpu().numpy().reshape(opt.motion_length, joints_num, 3)
+                plot_3d_pose_v2(b_img_name, kinematic_chain, motion_mat1[opt.interp_step])
+                plot_3d_pose_v2(e_img_name, kinematic_chain, motion_mat2[opt.interp_step])
 
         elif opt.dataset_type == "ntu_rgbd":
             motion_mat = mt.swap_xz(motion_mat)

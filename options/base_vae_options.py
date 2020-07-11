@@ -60,7 +60,6 @@ class BaseOptions():
             torch.cuda.set_device(self.opt.gpu_id)
         else:
             self.opt.gpu_id = None
-
         args = vars(self.opt)
 
         print('------------ Options -------------')

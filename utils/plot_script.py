@@ -123,15 +123,15 @@ def plot_3d_pose_v2(savePath, kinematic_tree, joints):
     figure = plt.figure()
     # ax = plt.axes(xlim=(-1, 1), ylim=(-1, 1), zlim=(-1, 1), projection='3d')
     ax = Axes3D(figure)
-    ax.set_xlim3d(-0.75, 0.75)
-    ax.set_ylim3d(-0.75, 0.75)
-    ax.set_zlim3d(-0.75, 0.75)
+    ax.set_ylim(-1, 1)
+    ax.set_xlim(-1, 1)
+    ax.set_zlim(-1, 1)
     # ax.set_xlabel('x')
     # ax.set_ylabel('y')
     # ax.set_zlabel('z')
     ax.view_init(elev=110, azim=90)
     # ax.scatter(joints[:, 0], joints[:, 1], joints[:, 2], color='black')
-    colors = ['red', 'magenta', 'black', 'green', 'blue']
+    colors = ['red', 'magenta', 'black', 'magenta', 'black', 'green', 'blue']
     for chain, color in zip(kinematic_tree, colors):
         ax.plot3D(joints[chain, 0], joints[chain, 1], joints[chain, 2], linewidth=5.0, color=color)
     # plt.axis('off')
@@ -184,6 +184,64 @@ def plot_3d_motion_v2(motion, kinematic_tree, save_path, interval=50):
     # writer = Writer(fps=15, metadata={})
     ani.save(save_path, writer='pillow')
     plt.close()
+
+def plot_3d_multi_motion(motion_list, kinematic_tree, save_path, interval=50, dataset=None):
+    matplotlib.use('Agg')
+
+    def init():
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+        if dataset == "mocap":
+            ax.set_ylim(-1.5, 1.5)
+            ax.set_xlim(0, 3)
+            ax.set_zlim(-1.5, 1.5)
+        else:
+            ax.set_ylim(-1, 1)
+            ax.set_xlim(-1, 1)
+            ax.set_zlim(-1, 1)
+        # ax.set_ylim(-1.0, 0.2)
+        # ax.set_xlim(-0.2, 1.0)
+        # ax.set_zlim(-1.0, 0.4)
+
+    fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+    ax = p3.Axes3D(fig)
+    init()
+
+    colors = ['red', 'magenta', 'black', 'magenta', 'black', 'green', 'blue']
+    frame_number = motion_list[0].shape[0]
+    # dim (frame, joints, xyz)
+    # print(data.shape)
+    print("Number of motions %d" % (len(motion_list)))
+    def update(index):
+        ax.lines = []
+        ax.collections = []
+        if dataset == "mocap":
+            ax.view_init(elev=110, azim=-90)
+        else:
+            ax.view_init(elev=110, azim=90)
+        for motion in motion_list:
+            for chain, color in zip(kinematic_tree, colors):
+                ax.plot3D(motion[index, chain, 0], motion[index, chain, 1], motion[index, chain, 2],
+                          linewidth=4.0, color=color)
+        plt.axis('off')
+
+#         ax.set_xticks([])
+#         ax.set_yticks([])
+
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_zticklabels([])
+
+    ani = FuncAnimation(fig, update, frames=frame_number, interval=interval, repeat=False, repeat_delay=200)
+    # update(1)
+    # plt.show()
+    # Writer = writers['ffmpeg']
+    # writer = Writer(fps=15, metadata={})
+    ani.save(save_path, writer='pillow')
+    plt.close()
+
 
 def plot_3d_motion_with_trajec(motion, kinematic_tree, save_path, interval=50, trajec1=None, trajec2=None, dataset=None):
     matplotlib.use('Agg')

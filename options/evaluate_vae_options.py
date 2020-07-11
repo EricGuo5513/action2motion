@@ -11,7 +11,25 @@ class TestOptions(BaseOptions):
         self.parser.add_argument('--num_samples', type=int, default=100, help='Number of generated')
         self.parser.add_argument('--batch_size', type=int, default=20, help='Batch size of training process')
 
+        self.parser.add_argument('--name_ext', type=str, default="", help='Extension of save path')
+
         # for ablation study only
         self.parser.add_argument('--save_latent', action='store_true', help='Save latent vector')
         self.parser.add_argument('--start_step', type=int, default=30, help='Start step where the latent stop being fixed')
+
+        # for interpolation only
+        self.parser.add_argument('--do_interp', action='store_true', help='Do interpolation study')
+        self.parser.add_argument('--interp_step', type=int, default=30,
+                                 help='Step where interpolation happens')
+        self.parser.add_argument('--interp_bins', type=int, default=30,
+                                 help='Step to which the latent vector is interpolated')
+        self.parser.add_argument('--interp_type', type=str, default="linear",
+                                 help='Step to which the latent vector is interpolated')
+
+        # for action shift only
+        self.parser.add_argument('--do_action_shift', action='store_true', help='Do action shift generation')
+        self.parser.add_argument('--action_list', type=str, default="0,1",
+                                 help='Step to which the latent vector is interpolated')
+        self.parser.add_argument('--shift_steps', type=str, default="50",
+                                 help='Step to which the latent vector is interpolated')
         self.isTrain = False

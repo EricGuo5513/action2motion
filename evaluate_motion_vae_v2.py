@@ -17,30 +17,38 @@ if __name__ == "__main__":
     label_dec = None
     dim_category = 31
     enumerator = None
-    device = torch.device("cuda:" + str(opt.gpu_id) if opt.gpu_id else "cpu")
+    device = torch.device("cpu" if opt.gpu_id is None else "cuda:" + str(opt.gpu_id))
     opt.save_root = os.path.join(opt.checkpoints_dir, opt.dataset_type, opt.name)
     opt.model_path = os.path.join(opt.save_root, 'model')
     opt.joints_path = os.path.join(opt.save_root, 'joints')
     model_file_path = os.path.join(opt.model_path, opt.which_epoch + '.tar')
-    result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name)
+    result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name + opt.name_ext)
 
     if opt.dataset_type == "humanact13":
         dataset_path = "./dataset/humanact13"
         input_size = 72
         joints_num = 24
-        label_dec = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         raw_offsets = paramUtil.shihao_raw_offsets
         kinematic_chain = paramUtil.shihao_kinematic_chain
-        enumerator = paramUtil.shihao_coarse_action_enumerator
+        if opt.coarse_grained:
+            label_dec = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+            enumerator = paramUtil.shihao_coarse_action_enumerator
+        else:
+            enumerator = paramUtil.shihao_fine_action_enumerator
+            label_dec = list(enumerator.keys())
     elif opt.dataset_type == "shihao":
         dataset_path = "./dataset/pose"
         pkl_path = './dataset/pose_shihao_merge'
         input_size = 72
         joints_num = 24
-        label_dec = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         raw_offsets = paramUtil.shihao_raw_offsets
         kinematic_chain = paramUtil.shihao_kinematic_chain
-        enumerator = paramUtil.shihao_coarse_action_enumerator
+        if opt.corse_grained:
+            label_dec = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+            enumerator = paramUtil.shihao_coarse_action_enumerator
+        else:
+            enumerator = paramUtil.shihao_fine_action_enumerator
+            label_dec = list(enumerator.keys())
     elif opt.dataset_type == "ntu_rgbd":
         file_prefix = "./dataset/"
         motion_desc_file = "motionlist.txt"
@@ -110,6 +118,8 @@ if __name__ == "__main__":
     decoder.to(device)
     veloc_net.to(device)
 
+    # print(device)
+
     if opt.dataset_type=='shihao':
         data = dataset.MotionFolderDatasetShihaoV2(opt.clip_set, dataset_path, pkl_path, opt,
                                                    lie_enforce=opt.lie_enforce, raw_offsets=raw_offsets,
@@ -130,24 +140,40 @@ if __name__ == "__main__":
         trainer = TrainerLieV2(motion_loader, opt, device, raw_offsets, kinematic_chain)
 
     dim_category = len(data.labels)
+    if opt.do_action_shift:
+        action_list = opt.action_list.split(',')
+        shift_steps = opt.shift_steps.split(',')
+        action_list = [int(ele) for ele in action_list]
+        shift_steps = [int(ele) for ele in shift_steps]
 
-    if opt.do_random:
-        fake_motion, classes, latents, logvar = trainer.evaluate(prior_net, decoder, veloc_net, opt.num_samples)
-        fake_motion = fake_motion.numpy()
+        category_list = [np.ones(opt.num_samples, dtype=np.int) * ele for ele in action_list]
+        cate_oh_list = [trainer.get_cate_one_hot(category)[0] for category in category_list]
+        fake_motion, _ , latents, logvar = trainer.evaluate_4_shift(prior_net, decoder, veloc_net, opt.num_samples,
+                                                                    cate_oh_list, shift_steps)
     else:
-        categories = np.arange(dim_category).repeat(opt.replic_times, axis=0)
-        # categories = np.arange(1).repeat(opt.replic_times, axis=0)
-        # categories = np.array([6]).repeat(opt.replic_times, axis=0)
-        # print(categories.shape)
-        num_samples = categories.shape[0]
-        category_oh, classes, latents = trainer.get_cate_one_hot(categories)
-        fake_motion, _, latents, logvar = trainer.evaluate(prior_net, decoder, veloc_net, num_samples, category_oh)
-        fake_motion = fake_motion.numpy()
+        if opt.do_random:
+            fake_motion, classes, latents, logvar = trainer.evaluate(prior_net, decoder, veloc_net, opt.num_samples)
+        else:
+            categories = np.arange(dim_category).repeat(opt.replic_times, axis=0)
+            # categories = np.arange(1).repeat(opt.replic_times, axis=0)
+            # categories = np.array([6]).repeat(opt.replic_times, axis=0)
+            # print(categories.shape)
+            num_samples = categories.shape[0]
+            category_oh, classes = trainer.get_cate_one_hot(categories)
+            fake_motion, _, latents, logvar = trainer.evaluate(prior_net, decoder, veloc_net, num_samples, category_oh)
+
+    fake_motion = fake_motion.numpy()
+    latents = latents.numpy()
+    logvar = logvar.numpy()
 
     print(fake_motion.shape)
     # print(fake_motion[:, 0, :2])
     for i in range(fake_motion.shape[0]):
-        class_type = enumerator[label_dec[classes[i]]]
+        if opt.do_action_shift:
+            name_list = [enumerator[label_dec[act_id]] for act_id in action_list]
+            class_type = '_'.join(name_list)
+        else:
+            class_type = enumerator[label_dec[classes[i]]]
         motion_orig = fake_motion[i]
         if not os.path.exists(result_path):
             os.makedirs(result_path)
@@ -169,10 +195,8 @@ if __name__ == "__main__":
         # motion_mat[:, :, 2] *= -1
         np.save(os.path.join(keypoint_path, class_type + str(i) + '_3d.npy'), motion_mat)
         if opt.save_latent:
-            latents = latents.numpy()
-            logvar = logvar.numpy()
-            np.save(os.path.join(latents, class_type + str(i) + '_latent.npy'), latents)
-            np.save(os.path.join(logvar, class_type + str(i) + '_lgvar.npy'), latents)
+            np.save(os.path.join(keypoint_path, class_type + str(i) + '_latent.npy'), latents[i])
+            np.save(os.path.join(keypoint_path, class_type + str(i) + '_lgvar.npy'), logvar[i])
 
         if opt.dataset_type == "shihao" or opt.dataset_type == "humanact13":
             pose_tree = paramUtil.smpl_tree
