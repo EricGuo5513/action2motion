@@ -1,6 +1,7 @@
 import numpy as np
 from utils.plot_script import *
 import utils.paramUtil as paramUtil
+from utils.utils_ import *
 
 
 def main1():
@@ -21,6 +22,11 @@ def main2():
     plot_3d_multi_motion(motion_list, kinematic_chain,
                          data_prefix + "_mul.gif",
                          interval=100, dataset='humanact13')
+
+
+def main3():
+    data_prefix = ""
+    kinematic_chain = paramUtil.shihao_kinematic_chain
 
 if __name__ == "__main__":
     main1()

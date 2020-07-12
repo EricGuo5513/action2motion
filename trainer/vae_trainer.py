@@ -936,7 +936,7 @@ class TrainerLieV2(Trainer):
                 print_current_loss(start_time, iter_num, self.opt.iters, mean_loss, current_kld=self.opt.lambda_kld)
 
             if iter_num % self.opt.eval_every == 0:
-                fake_motion, _ = self.evaluate(prior_net, decoder, veloc_net, e_num_samples, cate_one_hot)
+                fake_motion, _, _, _ = self.evaluate(prior_net, decoder, veloc_net, e_num_samples, cate_one_hot)
                 np.save(os.path.join(self.opt.joints_path, "motion_joints" + str(iter_num) + ".npy"), fake_motion)
 
             if iter_num % self.opt.save_every == 0:

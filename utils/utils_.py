@@ -1,5 +1,7 @@
 import math
 import time
+from PIL import Image
+import os
 
 
 def save_logfile(log_loss, save_path):
@@ -34,3 +36,27 @@ def print_current_loss(start_time, niter_state, total_niters, losses, epoch=None
     if current_kld is not None:
         message += ' current_kld_weight: %f' % (current_kld)
     print(message)
+
+
+def compose_and_save_img(img_list, save_dir, img_name, col=4, row=1, img_size=(256, 200)):
+    # print(col, row)
+    compose_img = compose_image(img_list, col, row, img_size)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    img_path = os.path.join(save_dir, img_name)
+    # print(img_path)
+    compose_img.save(img_path)
+
+
+def compose_image(img_list, col, row, img_size):
+    to_image = Image.new('RGB', (col * img_size[0], row * img_size[1]))
+    for y in range(0, row):
+        for x in range(0, col):
+            from_img = Image.fromarray(img_list[y * col + x])
+            # print((x * img_size[0], y*img_size[1],
+            #                           (x + 1) * img_size[0], (y + 1) * img_size[1]))
+            paste_area = (x * img_size[0], y*img_size[1],
+                                      (x + 1) * img_size[0], (y + 1) * img_size[1])
+            to_image.paste(from_img, paste_area)
+            # to_image[y*img_size[1]:(y + 1) * img_size[1], x * img_size[0] :(x + 1) * img_size[0]] = from_img
+    return to_image
