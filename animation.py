@@ -25,8 +25,36 @@ def main2():
 
 
 def main3():
-    data_prefix = ""
+    data_prefix = "./eval_results/shift/humanact13/vae_velocS_f0001_t001_trj10_rela_sit_jump_dumb_s30_60_l100/keypoint/sit_jump_lift_dumbbell11"
+    joints_path = data_prefix + "_3d.npy"
+    logvar_path = data_prefix + "_lgvar.npy"
+
+    img_path = "./eval_results/shift/humanact13/vae_velocS_f0001_t001_trj10_rela_sit_jump_dumb_s30_60_l100/sit_jump_lift_dumbbell11"
     kinematic_chain = paramUtil.shihao_kinematic_chain
+    joints_3d = np.load(joints_path)
+    logvar = np.load(logvar_path)
+    frames = joints_3d.shape[0]
+    if not os.path.exists(img_path):
+        os.makedirs(img_path)
+    for i in range(frames):
+        pose_3d = joints_3d[i]
+        pose_lgvar = logvar[i].mean()
+        plot_3d_pose_v2(os.path.join(img_path, str(i)+".png"), kinematic_chain, pose_3d, title= "LogVar%.3f" % pose_lgvar)
+
+
+def main4():
+    data_prefix = "/home/chuan/language2pose/action2pose/eval_results/quantile/humanact13/vae_velocS_f0001_t001_trj10_rela_jump3_s20_b20/"
+    name = "jump"
+    path_list = ["%s%s%d.png" % (data_prefix, name, i) for i in range(20)]
+    img_list = []
+
+    img_size = (250, 300)
+    for path in path_list:
+        img = Image.open(path)
+        img_arr = np.asarray(img)
+        img_crop = img_arr[100:400, 200:450]
+        img_list.append(img_crop)
+    compose_and_save_img(img_list, data_prefix, "lift_dumbbell_transition.png", 10, 2, img_size)
 
 if __name__ == "__main__":
-    main1()
+    main4()

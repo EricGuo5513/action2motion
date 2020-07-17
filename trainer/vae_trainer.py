@@ -4,6 +4,7 @@ import torch.nn as nn
 import time
 import os
 import random
+from torch.distributions import Normal
 
 from collections import OrderedDict
 from models.motion_gan import *
@@ -110,8 +111,31 @@ class Trainer(object):
         return results
 
     @staticmethod
-    def quantile_interpolate(bins, low, high, loc, scale, tensor):
-        pass
+    def latent_percentile(bins, mu_vec, lgvar_vec, tensor, low_qt=0.05, high_qt=0.95):
+        # mu_vec dim(batch_size, latent_dim)
+        mu_vec.squeeze_(0)
+        lgvar_vec.squeeze_(0)
+        # dim ([bins])
+        quantiles = torch.linspace(low_qt, high_qt, bins)
+        quantiles = tensor(quantiles.size()).copy_(quantiles).unsqueeze_(1)
+        # print(quantiles)
+        std = lgvar_vec.mul(0.5).exp()
+        dist = Normal(mu_vec, std)
+        # dim (bins, latent_dim)
+        qt_mat = dist.icdf(quantiles)
+        print(qt_mat.shape)
+        results = tensor(qt_mat.size()).copy_(qt_mat)
+        return results
+
+    @staticmethod
+    def sp_latent_percentile(bins, mu_vec, lgvar_vec, latent_vec, pp_dims, tensor, low_qt=0.05, high_qt=0.95):
+        sp_mu_vec = mu_vec[pp_dims]
+        sp_lgvar_vec = lgvar_vec[pp_dims]
+        # dim (1, latent_dim)
+        latents = latent_vec.repeat(bins, 1)
+        sp_percentile = Trainer.latent_percentile(bins, sp_mu_vec, sp_lgvar_vec, tensor, low_qt=low_qt, high_qt=high_qt)
+        latents[:, pp_dims] = sp_percentile
+        return latents
 
     def tensor_fill(self, tensor_size, val=0):
         return torch.zeros(tensor_size).fill_(val).requires_grad_(False).to(self.device)
@@ -1104,6 +1128,7 @@ class TrainerLieV3(TrainerLieV2):
             num_joints = int(real_poses.shape[-1] / 3)
             latent_list = []
             logvar_list = []
+            mu_list = []
             # print(num_joints)
             for i in range(0, self.opt.motion_length):
                 # print(prior_vec[:, :3].repeat(1, num_joints).shape)
@@ -1131,6 +1156,7 @@ class TrainerLieV3(TrainerLieV2):
                 prior_vec = pred_joints
                 latent_list.append(z_t_p.unsqueeze(1))
                 logvar_list.append(logvar_p.unsqueeze(1))
+                mu_list.append(mu_p.unsqueeze(1))
                 generate_batch.append(pred_joints.unsqueeze(1))
 
         for i in range(1, len(generate_batch)):
@@ -1140,8 +1166,13 @@ class TrainerLieV3(TrainerLieV2):
         generate_batch = torch.cat(generate_batch, dim=1)
         latent_batch = torch.cat(latent_list, dim=1)
         logvar_batch = torch.cat(logvar_list, dim=1)
-        return generate_batch.cpu(), classes_to_generate, latent_batch.cpu(), logvar_batch.cpu()
+        mu_list =torch.cat(mu_list, dim=1)
+        if return_latent:
+            return generate_batch.cpu(), classes_to_generate, latent_batch.cpu(), logvar_batch.cpu(), mu_list.cpu()
+        else:
+            return generate_batch.cpu(), classes_to_generate, latent_batch.cpu(), logvar_batch.cpu()
 
+    # For controllable Divergence
     def evaluate_4_manip(self, prior_net, decoder, veloc_net, num_samples, latents, start_step, cate_one_hot=None, real_joints=None):
         prior_net.eval()
         decoder.eval()
@@ -1177,6 +1208,7 @@ class TrainerLieV3(TrainerLieV2):
 
             latent_list = []
             logvar_list = []
+            mu_list = []
 
             generate_batch = []
             num_joints = int(real_poses.shape[-1] / 3)
@@ -1210,6 +1242,7 @@ class TrainerLieV3(TrainerLieV2):
                 generate_batch.append(pred_joints.unsqueeze(1))
                 latent_list.append(z_t_p.unsqueeze(1))
                 logvar_list.append(logvar_p.unsqueeze(1))
+                mu_list.append(mu_p.unsqueeze(1))
 
         for i in range(1, len(generate_batch)):
             # current location equals to the relative location plus location of previous pose
@@ -1219,8 +1252,10 @@ class TrainerLieV3(TrainerLieV2):
 
         new_latent_batch = torch.cat(latent_list, dim=1)
         logvar_batch = torch.cat(logvar_list, dim=1)
-        return generate_batch.cpu(), classes_to_generate, new_latent_batch.cpu(), logvar_batch.cpu()
+        mu_batch = torch.cat(mu_list, dim=1)
+        return generate_batch.cpu(), classes_to_generate, new_latent_batch.cpu(), logvar_batch.cpu(), mu_batch.cpu()
 
+    # For interpolation in latent space
     # Note that vectors prior to interp_step in latent1 and latent2 must be the same
     def evaluate_4_interp(self, prior_net, decoder, veloc_net, bins, latent1, latent2, interp_step, interp_type,
                           cate_one_hot=None, real_joints=None):
@@ -1312,6 +1347,7 @@ class TrainerLieV3(TrainerLieV2):
         logvar_batch = torch.cat(logvar_list, dim=1)
         return generate_batch.cpu(), classes_to_generate, new_latent_batch.cpu(), logvar_batch.cpu()
 
+    # For action shift visulization
     # elements in list shift steps must be in ascending order
     def evaluate_4_shift(self, prior_net, decoder, veloc_net, num_samples, cate_oh_list, shift_steps, real_joints=None):
         assert len(cate_oh_list) != len(shift_steps) - 1
@@ -1393,3 +1429,101 @@ class TrainerLieV3(TrainerLieV2):
         new_latent_batch = torch.cat(latent_list, dim=1)
         logvar_batch = torch.cat(logvar_list, dim=1)
         return generate_batch.cpu(), None, new_latent_batch.cpu(), logvar_batch.cpu()
+
+    # For latent percentile
+    def evaluate_4_quantile(self, prior_net, decoder, veloc_net, bins, latent, mu_vec, lgvar_vec, interp_step,
+                            cate_one_hot=None, real_joints=None, low_qt=0.05, high_qt=0.95, pp_dims=None):
+        prior_net.eval()
+        decoder.eval()
+        veloc_net.eval()
+        with torch.no_grad():
+            if cate_one_hot is None:
+                cate_one_hot, classes_to_generate = self.sample_z_cate(bins)
+            else:
+                classes_to_generate = None
+            prior_vec = self.tensor_fill((bins, self.opt.pose_dim), 0)
+            prior_net.init_hidden(bins)
+            decoder.init_hidden(bins)
+            veloc_net.init_hidden(bins)
+
+            # sample real poses from dataset
+            if real_joints is None:
+                # real_joints (batch_size, motion_len, 72)
+                real_joints, cate_data = self.sample_real_motion_batch()
+
+            if real_joints.shape[0] < bins:
+                repeat_ratio = int(bins / real_joints.shape[0])
+                real_joints = real_joints.repeat((repeat_ratio, 1, 1))
+                pad_num = bins - real_joints.shape[0]
+                if pad_num != 0:
+                    real_joints = torch.cat((real_joints, real_joints[: pad_num]), dim=0)
+            else:
+                real_joints = real_joints[:bins]
+            real_poses = real_joints[:, 0, :]
+            real_poses = self.Tensor(real_poses.size()).copy_(real_poses)
+
+            latent = latent.unsqueeze_(0)
+
+            if pp_dims is None:
+                latent_interp = self.latent_percentile(bins, mu_vec, lgvar_vec, self.Tensor, low_qt, high_qt)
+            else:
+                latent_interp = self.sp_latent_percentile(bins, mu_vec, lgvar_vec, latent, pp_dims,
+                                                          self.Tensor, low_qt, high_qt)
+            # dim latent_interp (bins, vec_dim)
+            # dim latent_batch (bins, motion_length, vec_dim)
+            latent_batch = latent.repeat(bins, 1, 1)
+
+            # print(latent_interp)
+            latent_batch[:, interp_step, :] = latent_interp
+
+            # print(latent_batch.shape)
+            # print(cate_one_hot.shape)
+
+            latent_list = []
+            logvar_list = []
+            mu_list = []
+
+            generate_batch = []
+            num_joints = int(real_poses.shape[-1] / 3)
+            # print(num_joints)
+            for i in range(0, self.opt.motion_length):
+                # print(prior_vec[:, :3].repeat(1, num_joints).shape)
+                # print(prior_vec.shape)
+                prior_vec = prior_vec - prior_vec[:, :3].repeat(1, num_joints)
+                condition_vec = cate_one_hot
+                if self.opt.time_counter:
+                    time_counter = i / (self.opt.motion_length - 1)
+                    time_counter_vec = self.tensor_fill((bins, 1), time_counter)
+                    condition_vec = torch.cat((cate_one_hot, time_counter_vec), dim=1)
+                # print(prior_vec.shape, condition_vec.shape)
+                h = torch.cat((prior_vec, condition_vec), dim=1)
+
+                z_t_p, mu_p, logvar_p, h_in_p = prior_net(h)
+                if i <= interp_step:
+                    z_t_p = latent_batch[:, i, :]
+
+                h_mid = torch.cat((h, z_t_p), dim=1)
+                lie_out, vel_mid, h_in = decoder(h_mid)
+                pred_o_traj = self.pose_lie_2_joints(lie_out, real_poses, i == 0)
+                if i == 0:
+                    pred_joints = pred_o_traj
+                else:
+                    vel_in = torch.cat((prior_vec, pred_o_traj, vel_mid), dim=-1)
+                    vel_out = veloc_net(vel_in)
+                    pred_joints = pred_o_traj + vel_out.repeat(1, num_joints)
+                prior_vec = pred_joints
+                generate_batch.append(pred_joints.unsqueeze(1))
+                latent_list.append(z_t_p.unsqueeze(1))
+                logvar_list.append(logvar_p.unsqueeze(1))
+                mu_list.append(mu_p.unsqueeze(1))
+
+        for i in range(1, len(generate_batch)):
+            # current location equals to the relative location plus location of previous pose
+            generate_batch[i] = generate_batch[i] + generate_batch[i - 1][:, :, :3].repeat(1, 1, num_joints)
+        # (batch_size, motion_len, 72)
+        generate_batch = torch.cat(generate_batch, dim=1)
+
+        new_latent_batch = torch.cat(latent_list, dim=1)
+        logvar_batch = torch.cat(logvar_list, dim=1)
+        mu_batch = torch.cat(mu_list, dim=1)
+        return generate_batch.cpu(), classes_to_generate, new_latent_batch.cpu(), logvar_batch.cpu(), mu_batch.cpu()

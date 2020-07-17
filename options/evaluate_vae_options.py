@@ -19,11 +19,17 @@ class TestOptions(BaseOptions):
 
         # for interpolation only
         self.parser.add_argument('--do_interp', action='store_true', help='Do interpolation study')
+        self.parser.add_argument('--do_quantile', action='store_true', help='Do quantitle of latent vector')
+
         self.parser.add_argument('--interp_step', type=int, default=30,
                                  help='Step where interpolation happens')
         self.parser.add_argument('--interp_bins', type=int, default=30,
                                  help='Step to which the latent vector is interpolated')
         self.parser.add_argument('--interp_type', type=str, default="linear",
+                                 help='Step to which the latent vector is interpolated')
+
+            # for quantile only
+        self.parser.add_argument('--pp_dims', type=str, default='-1',
                                  help='Step to which the latent vector is interpolated')
 
         # for action shift only

@@ -152,7 +152,8 @@ if __name__ == "__main__":
                                                                     cate_oh_list, shift_steps)
     else:
         if opt.do_random:
-            fake_motion, classes, latents, logvar = trainer.evaluate(prior_net, decoder, veloc_net, opt.num_samples)
+            fake_motion, classes, latents, logvar, mu = trainer.evaluate(prior_net, decoder, veloc_net, opt.num_samples,
+                                                                         return_latent=True)
         else:
             categories = np.arange(dim_category).repeat(opt.replic_times, axis=0)
             # categories = np.arange(1).repeat(opt.replic_times, axis=0)
@@ -160,11 +161,13 @@ if __name__ == "__main__":
             # print(categories.shape)
             num_samples = categories.shape[0]
             category_oh, classes = trainer.get_cate_one_hot(categories)
-            fake_motion, _, latents, logvar = trainer.evaluate(prior_net, decoder, veloc_net, num_samples, category_oh)
+            fake_motion, _, latents, logvar, mu = trainer.evaluate(prior_net, decoder, veloc_net, num_samples, category_oh,
+                                                               return_latent=True)
 
     fake_motion = fake_motion.numpy()
     latents = latents.numpy()
     logvar = logvar.numpy()
+    mu = mu.numpy()
 
     print(fake_motion.shape)
     # print(fake_motion[:, 0, :2])
@@ -197,6 +200,7 @@ if __name__ == "__main__":
         if opt.save_latent:
             np.save(os.path.join(keypoint_path, class_type + str(i) + '_latent.npy'), latents[i])
             np.save(os.path.join(keypoint_path, class_type + str(i) + '_lgvar.npy'), logvar[i])
+            np.save(os.path.join(keypoint_path, class_type + str(i) + '_mu.npy'), mu[i])
 
         if opt.dataset_type == "shihao" or opt.dataset_type == "humanact13":
             pose_tree = paramUtil.smpl_tree

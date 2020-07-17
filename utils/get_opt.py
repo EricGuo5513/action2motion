@@ -69,6 +69,15 @@ dataset_opt = {
         'kinematic_chain': paramUtil.shihao_kinematic_chain,
         'enumerator': paramUtil.shihao_coarse_action_enumerator,
     },
+    'humanact13_fineG': {
+        'dataset_path': "./dataset/humanact13",
+        'input_size_raw': 72,
+        'joints_num': 24,
+        'label_dec': list(paramUtil.shihao_fine_action_enumerator.keys()),
+        'raw_offsets': paramUtil.shihao_raw_offsets,
+        'kinematic_chain': paramUtil.shihao_kinematic_chain,
+        'enumerator': paramUtil.shihao_fine_action_enumerator,
+    },
     'shihao': {
         'dataset_path': './dataset/pose',
         'pkl_path': './dataset/pose_shihao_merge',
@@ -138,6 +147,9 @@ def get_opt(opt_path, num_motions, device):
     opt.joints_path = os.path.join(opt.save_root, 'joints')
     opt.model_file_path = os.path.join(opt.model_path, opt.which_epoch + '.tar')
     opt.result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name)
+
+    if not opt.coarse_grained:
+        dataset_opt['humanact13'] = dataset_opt['humanact13_fineG']
 
     opt_dict.update(dataset_opt[opt.dataset_type])
 

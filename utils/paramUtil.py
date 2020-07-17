@@ -154,7 +154,7 @@ shihao_fine_action_enumerator = {
     605: "lift_dumbells with both hands and bend legs",
     701: "sit",
     801: "eat_finger_right",
-    802: "eat_pie/hamburger",
+    802: "eat_pie or hamburger",
     803: "Eat with left hand",
     901: "Turn steering wheel",
     1001: "Take out phone, call and put phone back",

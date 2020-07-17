@@ -119,13 +119,15 @@ def plot_3d_pose(pose, body_entity, save_path=None):
 
 
 
-def plot_3d_pose_v2(savePath, kinematic_tree, joints):
+def plot_3d_pose_v2(savePath, kinematic_tree, joints, title=None):
     figure = plt.figure()
     # ax = plt.axes(xlim=(-1, 1), ylim=(-1, 1), zlim=(-1, 1), projection='3d')
     ax = Axes3D(figure)
     ax.set_ylim(-1, 1)
     ax.set_xlim(-1, 1)
     ax.set_zlim(-1, 1)
+    if title is not None:
+        ax.set_title(title)
     # ax.set_xlabel('x')
     # ax.set_ylabel('y')
     # ax.set_zlabel('z')
@@ -134,7 +136,7 @@ def plot_3d_pose_v2(savePath, kinematic_tree, joints):
     colors = ['red', 'magenta', 'black', 'magenta', 'black', 'green', 'blue']
     for chain, color in zip(kinematic_tree, colors):
         ax.plot3D(joints[chain, 0], joints[chain, 1], joints[chain, 2], linewidth=5.0, color=color)
-    # plt.axis('off')
+    plt.axis('off')
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_zticklabels([])
