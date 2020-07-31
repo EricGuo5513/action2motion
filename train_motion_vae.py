@@ -29,13 +29,13 @@ if __name__ == "__main__":
     input_size = 72
     data = None
 
-    if opt.dataset_type == "humanact13":
-        dataset_path = "./dataset/humanact13"
+    if opt.dataset_type == "humanact12":
+        dataset_path = "./dataset/humanact12"
         input_size = 72
         joints_num = 24
         raw_offsets = paramUtil.shihao_raw_offsets
         kinematic_chain = paramUtil.shihao_kinematic_chain
-        data = dataset.MotionFolderDatasetHumanAct13(dataset_path, opt, lie_enforce=opt.lie_enforce)
+        data = dataset.MotionFolderDatasetHumanAct12(dataset_path, opt, lie_enforce=opt.lie_enforce)
     elif opt.dataset_type == "shihao":
         dataset_path = "./dataset/pose"
         pkl_path = './dataset/pose_shihao_merge'

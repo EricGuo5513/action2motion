@@ -2,6 +2,7 @@ import math
 import time
 from PIL import Image
 import os
+from scipy.ndimage import gaussian_filter
 
 
 def save_logfile(log_loss, save_path):
@@ -60,3 +61,11 @@ def compose_image(img_list, col, row, img_size):
             to_image.paste(from_img, paste_area)
             # to_image[y*img_size[1]:(y + 1) * img_size[1], x * img_size[0] :(x + 1) * img_size[0]] = from_img
     return to_image
+
+
+def temporal_filter(motion, sigma=1):
+    motion = motion.reshape(motion.shape[0], -1)
+    # print(motion.shape)
+    for i in range(motion.shape[0]):
+        motion[:, i] = gaussian_filter(motion[:, i], sigma=sigma, mode="nearest")
+    return motion

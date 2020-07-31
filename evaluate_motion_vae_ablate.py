@@ -54,8 +54,8 @@ if __name__ == "__main__":
     result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name + opt.name_ext)
 
     if opt.do_interp:
-        path1 = "./eval_results/ablation/humanact13/vae_velocS_f0001_t001_trj10_rela_R1/keypoint/jump18"
-        path2 = "./eval_results/ablation/humanact13/vae_velocS_f0001_t001_trj10_rela/keypoint/jump16"
+        path1 = "./eval_results/ablation/humanact12/vae_velocS_f0001_t001_trj10_rela_R1/keypoint/jump18"
+        path2 = "./eval_results/ablation/humanact12/vae_velocS_f0001_t001_trj10_rela/keypoint/jump16"
         # path1 = "./eval_results/ablation/humanact13/vae_velocS_f0001_t001_trj10_rela_R1/keypoint/lift_dumbbell25"
         # path2 = "./eval_results/ablation/humanact13/vae_velocS_f0001_t001_trj10_rela/keypoint/lift_dumbbell27"
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         latents2, motion_mat2 = load_latent(path2)
 
     elif opt.do_quantile:
-        path = "./eval_results/ablation/humanact13/vae_velocS_f0001_t001_trj10_rela_R2/keypoint/jump3"
+        path = "./eval_results/ablation/humanact12/vae_velocS_f0001_t001_trj10_rela_R2/keypoint/jump3"
 
         latents, motion_mat, lgvar, mu = load_latent(path, load_dist=True)
     else:
@@ -74,8 +74,8 @@ if __name__ == "__main__":
 
     action_indx = 3
 
-    if opt.dataset_type == "humanact13":
-        dataset_path = "./dataset/humanact13"
+    if opt.dataset_type == "humanact12":
+        dataset_path = "./dataset/humanact12"
         input_size = 72
         joints_num = 24
         label_dec = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
@@ -230,7 +230,7 @@ if __name__ == "__main__":
         np.save(os.path.join(keypoint_path, class_type + str(i) + '_lgvar.npy'), logvar[i])
         np.save(os.path.join(keypoint_path, class_type + str(i) + '_mu.npy'), mu[i])
 
-        if opt.dataset_type == "shihao" or opt.dataset_type == "humanact13":
+        if opt.dataset_type == "shihao" or opt.dataset_type == "humanact12":
             pose_tree = paramUtil.smpl_tree
             ground_trajec = motion_mat[:, 0, :]
             plot_3d_motion_with_trajec(motion_mat, kinematic_chain, save_path=file_name, interval=80, trajec1=ground_trajec)

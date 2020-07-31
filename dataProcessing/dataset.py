@@ -270,7 +270,7 @@ class MotionFolderDatasetNTU(data.Dataset):
         return pose_mat, en_label
 
 
-class MotionFolderDatasetHumanAct13(data.Dataset):
+class MotionFolderDatasetHumanAct12(data.Dataset):
     def __init__(self, datapath, opt, lie_enforce, do_offset=True, raw_offsets=None, kinematic_chain=None):
         self.datapath = datapath
         self.do_offset = do_offset

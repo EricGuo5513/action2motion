@@ -24,8 +24,8 @@ if __name__ == "__main__":
     model_file_path = os.path.join(opt.model_path, opt.which_epoch + '.tar')
     result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name + opt.name_ext)
 
-    if opt.dataset_type == "humanact13":
-        dataset_path = "./dataset/humanact13"
+    if opt.dataset_type == "humanact12":
+        dataset_path = "./dataset/humanact12"
         input_size = 72
         joints_num = 24
         raw_offsets = paramUtil.shihao_raw_offsets
@@ -124,8 +124,8 @@ if __name__ == "__main__":
         data = dataset.MotionFolderDatasetShihaoV2(opt.clip_set, dataset_path, pkl_path, opt,
                                                    lie_enforce=opt.lie_enforce, raw_offsets=raw_offsets,
                                                    kinematic_chain=kinematic_chain)
-    elif opt.dataset_type == 'humanact13':
-        data = dataset.MotionFolderDatasetHumanAct13(dataset_path, opt, lie_enforce=opt.lie_enforce)
+    elif opt.dataset_type == 'humanact12':
+        data = dataset.MotionFolderDatasetHumanAct12(dataset_path, opt, lie_enforce=opt.lie_enforce)
     elif opt.dataset_type == 'ntu_rgbd_vibe':
         data = dataset.MotionFolderDatasetNtuVIBE(file_prefix, motion_desc_file, labels, opt, joints_num=joints_num,
                                                   offset=True, extract_joints=paramUtil.kinect_vibe_extract_joints)
@@ -202,7 +202,7 @@ if __name__ == "__main__":
             np.save(os.path.join(keypoint_path, class_type + str(i) + '_lgvar.npy'), logvar[i])
             np.save(os.path.join(keypoint_path, class_type + str(i) + '_mu.npy'), mu[i])
 
-        if opt.dataset_type == "shihao" or opt.dataset_type == "humanact13":
+        if opt.dataset_type == "shihao" or opt.dataset_type == "humanact12":
             pose_tree = paramUtil.smpl_tree
             ground_trajec = motion_mat[:, 0, :]
             plot_3d_motion_with_trajec(motion_mat, kinematic_chain, save_path=file_name, interval=80, trajec1=ground_trajec)
