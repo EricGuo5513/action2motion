@@ -62,6 +62,13 @@ if __name__ == "__main__":
         joints_num = 24
         data = dataset.MotionFolderDatasetShihaoV2(opt.clip_set, dataset_path, pkl_path, opt,
                                                    lie_enforce=opt.lie_enforce)
+    elif opt.dataset_type == "humanact12":
+        dataset_path = "./dataset/humanact12"
+        input_size = 72
+        joints_num = 24
+        raw_offsets = paramUtil.shihao_raw_offsets
+        kinematic_chain = paramUtil.shihao_kinematic_chain
+        data = dataset.MotionFolderDatasetHumanAct12(dataset_path, opt, lie_enforce=opt.lie_enforce)
     elif opt.dataset_type == "mocap":
         dataset_path = "./dataset/mocap/mocap_3djoints/"
         clip_path = './dataset/mocap/pose_clip.csv'

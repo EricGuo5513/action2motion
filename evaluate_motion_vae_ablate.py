@@ -68,11 +68,12 @@ if __name__ == "__main__":
         latents, motion_mat, lgvar, mu = load_latent(path, load_dist=True)
     else:
         # path = "./eval_results/diverse/humanact13/vae_velocS_f0001_t001_trj10_rela_jump47_s20/keypoint/jump0"
-        path = "./eval_results/ablation/mocap/vae_velocR_f0001_t01_trj10_rela/keypoint/Run14"
+        # path = "./eval_results/ablation/mocap/vae_velocR_f0001_t01_trj10_rela/keypoint/Run14"
+        path = "./eval_results/ablation/mocap/vae_velocS_f0001_t01_trj10_relaR0/keypoint/Walk4"
         latents, motion_mat = load_latent(path)
 
 
-    action_indx = 3
+    action_indx = 0
 
     if opt.dataset_type == "humanact12":
         dataset_path = "./dataset/humanact12"

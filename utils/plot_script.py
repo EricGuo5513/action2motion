@@ -142,7 +142,13 @@ def plot_3d_pose_v2(savePath, kinematic_tree, joints, title=None):
     ax.set_zticklabels([])
     plt.savefig(savePath)
 
-
+'''
+motion: motion data, in dimension of (motion_len, joint_num, 3)
+kinematic_tree: an embeded list indicating the pose structure,
+                such as [[0, 1, 2, 3], [0, 12, 13, 14, 15], [0, 16, 17, 18, 19], [1, 4, 5, 6, 7], [1, 8, 9, 10, 11]]
+save_path: path where the animation will be saved
+interval: time interval (ms) between consecutive frames
+'''
 def plot_3d_motion_v2(motion, kinematic_tree, save_path, interval=50):
     matplotlib.use('Agg')
 
