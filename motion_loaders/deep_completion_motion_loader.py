@@ -15,6 +15,8 @@ class DeepCompletionGeneratedDataset(Dataset):
 
         self.num_motions = num_motions
 
+        print(num_labels)
+
         pose_models = torch.load(model_path_pose)
         pose_G = models.PoseGenerator(dim_noise_pose, num_labels, hidden_size_pose, input_size, device).to(device)
         pose_G.load_state_dict(pose_models['model_G'])

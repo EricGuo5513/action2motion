@@ -22,13 +22,14 @@ def get_motion_loader(opt_path, num_motions, batch_size, device, ground_truth_mo
         else:
             print('Generating Adversaried Motion VAE Motion...')
             dataset = MotionVAEGeneratedDataset(opt, num_motions, batch_size, device)
-    elif '/motion_gan/' in opt_path:
+    elif '/motion_gan' in opt_path:
         print('Generating Motion GAN Motion...')
         dataset = MotionGanGeneratedDataset(opt, opt.motion_length, opt.input_size_raw, len(opt.label_dec),
                                             opt.dim_z, opt.hidden_size, opt.model_file_path,
                                             num_motions, device)
     elif 'RNN' in opt_path:
         print('Generating Baseline - RNN Motion...')
+        # print(opt.label_dec)
         dataset = ConditionedRNNGeneratedDataset(opt.motion_length, opt.input_size_raw, len(opt.label_dec),
                                                  ground_truth_motion_loader, opt.model_file_path_override,
                                                  num_motions, device)

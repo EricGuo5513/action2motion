@@ -201,7 +201,7 @@ def animation_4_user_study(save_dir, motion_loaders):
 if __name__ == '__main__':
 
     # dataset_opt_path = './checkpoints/vae/ntu_rgbd_vibe/vae_velocS_f0001_t01_trj10_rela/opt.txt'
-    dataset_opt_path = './checkpoints/vae/humanact13/vae_velocR_f0001_t001_trj10_rela_fineG/opt.txt'
+    dataset_opt_path = './checkpoints/vae/humanact12/vae_velocR_f0001_t001_trj10_rela_fineG/opt.txt'
     eval_motion_loaders = {
         # 'vae_velocR_f0001_t01_trj10_rela': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/mocap/vae_velocR_f0001_t01_trj10_rela/opt.txt',
@@ -216,16 +216,16 @@ if __name__ == '__main__':
         #     './checkpoints/vae/humanact13/vae_veloc_f0001_t01_optim_seperate_relative/opt.txt',
         #     num_motions, 128, device, ground_truth_motion_loader),
         'vae_velocS_f0001_t001_trj10_rela_fineG': lambda num_motions, device: get_motion_loader(
-           './checkpoints/vae/humanact13/vae_velocS_f0001_t001_trj10_rela_fineG/opt.txt',
+           './checkpoints/vae/humanact12/vae_velocS_f0001_t001_trj10_rela_fineG/opt.txt',
            num_motions, 128, device, ground_truth_motion_loader),
         'vae_velocR_f0001_t001_trj10_rela_fineG': lambda num_motions, device: get_motion_loader(
-        './checkpoints/vae/humanact13/vae_velocR_f0001_t001_trj10_rela_fineG/opt.txt',
+        './checkpoints/vae/humanact12/vae_velocR_f0001_t001_trj10_rela_fineG/opt.txt',
         num_motions, 128, device, ground_truth_motion_loader),
         # 'vanilla_vae_lie_mse_kld01': lambda num_motions, device: get_motion_loader(
         #    './checkpoints/vae/mocap/vanilla_vae_lie_mse_kld01/opt.txt',
         #    num_motions, 36, device, ground_truth_motion_loader),
         'vanilla_vae_lie_mse_kld001_fineG': lambda num_motions, device: get_motion_loader(
-          './checkpoints/vae/humanact13/vanilla_vae_lie_mse_kld001_fineG/opt.txt',
+          './checkpoints/vae/humanact12/vanilla_vae_lie_mse_kld001_fineG/opt.txt',
           num_motions, 128, device, ground_truth_motion_loader),
         # 'vanilla_vae_lie_mse_kld001': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/shihao/vanilla_vae_lie_mse_kld001/opt.txt',
@@ -238,15 +238,15 @@ if __name__ == '__main__':
         # 'vanila_vae_tf': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/shihao/vanila_vae_tf/opt.txt',
         #     num_motions, 128, device),
-        # 'motion_gan': lambda num_motions, device: get_motion_loader(
-        #      './checkpoints/shihao/motion_gan/opt.txt',
-        #      num_motions, 128, device),
-        # 'conditionedRNN': lambda num_motions, device: get_motion_loader(
-        #      './model_file/conditionedRNN_shihao_opt.txt',
-        #      num_motions, 128, device, ground_truth_motion_loader),
-        # 'deep_completion': lambda num_motions, device: get_motion_loader(
-        #      './model_file/deep_completion_shihao_opt.txt',
-        #      num_motions, 128, device),
+        'motion_gan': lambda num_motions, device: get_motion_loader(
+             './checkpoints/humanact12/motion_gan_fineG/opt.txt',
+             num_motions, 128, device),
+        'conditionedRNN': lambda num_motions, device: get_motion_loader(
+             './model_file/conditionedRNN_act12_opt_fineG.txt',
+             num_motions, 128, device, ground_truth_motion_loader),
+        'deep_completion': lambda num_motions, device: get_motion_loader(
+            './model_file/deep_completion_act12_opt_fineG.txt',
+             num_motions, 128, device),
     }
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -254,6 +254,7 @@ if __name__ == '__main__':
     num_motions = 2000
 
     dataset_opt = get_opt(dataset_opt_path, num_motions, device)
+    # print(dataset_opt)
     gru_classifier_for_fid = load_classifier_for_fid(dataset_opt, device)
     gru_classifier = load_classifier(dataset_opt, device)
 
@@ -268,6 +269,6 @@ if __name__ == '__main__':
     animation_4_user_study(save_dir, motion_loaders)
     
     '''
-    log_file = 'final_evaluation_humanact13_veloc_fineG.log'
+    log_file = 'final_evaluation_humanact12_veloc_fineG.log'
     evaluation(log_file)
 

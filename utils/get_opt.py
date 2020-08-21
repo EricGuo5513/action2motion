@@ -60,8 +60,8 @@ opt_conversion = {
 
 
 dataset_opt = {
-    'humanact13': {
-        'dataset_path': "./dataset/humanact13",
+    'humanact12': {
+        'dataset_path': "./dataset/humanact12",
         'input_size_raw': 72,
         'joints_num': 24,
         'label_dec': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
@@ -69,8 +69,8 @@ dataset_opt = {
         'kinematic_chain': paramUtil.shihao_kinematic_chain,
         'enumerator': paramUtil.shihao_coarse_action_enumerator,
     },
-    'humanact13_fineG': {
-        'dataset_path': "./dataset/humanact13",
+    'humanact12_fineG': {
+        'dataset_path': "./dataset/humanact12",
         'input_size_raw': 72,
         'joints_num': 24,
         'label_dec': list(paramUtil.shihao_fine_action_enumerator.keys()),
@@ -147,11 +147,17 @@ def get_opt(opt_path, num_motions, device):
     opt.joints_path = os.path.join(opt.save_root, 'joints')
     opt.model_file_path = os.path.join(opt.model_path, opt.which_epoch + '.tar')
     opt.result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name)
+    # print(opt.coarse_grained)
 
     if not opt.coarse_grained:
-        dataset_opt['humanact13'] = dataset_opt['humanact13_fineG']
+        dataset_opt['humanact12'] = dataset_opt['humanact12_fineG']
+        # print(dataset_opt['humanact12'])
+
+    if opt.dataset_type == 'humanact13':
+        opt.dataset_type = 'humanact12'
 
     opt_dict.update(dataset_opt[opt.dataset_type])
+    # print(opt_dict['label_dec'])
 
     if 'use_lie' not in opt_dict:
         opt.use_lie = False

@@ -6,15 +6,15 @@ from models.motion_gan import MotionDiscriminator
 classifier_model_files = {
     'ntu_rgbd_vibe': './model_file/action_recognition_model_vibe_v2.tar',
     'shihao': './model_file/action_recognition_model_shihao.tar',
-    'humanact13': './model_file/action_recognition_model_humanact13.tar',
-    'humanact13_fineG': './model_file/action_recognition_model_humanact13_fineG.tar',
+    'humanact12': './model_file/action_recognition_model_humanact12.tar',
+    'humanact12_fineG': './model_file/action_recognition_model_humanact12_fineG.tar',
     'mocap': './model_file/action_recognition_model_mocap_new.tar'
 }
 
 
 def load_classifier(opt, device):
     if not opt.coarse_grained:
-        classifier_model_files['humanact13'] = classifier_model_files['humanact13_fineG']
+        classifier_model_files['humanact12'] = classifier_model_files['humanact12_fineG']
     model = torch.load(classifier_model_files[opt.dataset_type])
     classifier = MotionDiscriminator(opt.input_size_raw, 128, 2, len(opt.label_dec)).to(device)
     classifier.load_state_dict(model['model'])
@@ -37,7 +37,10 @@ class MotionDiscriminatorForFID(MotionDiscriminator):
 
 
 def load_classifier_for_fid(opt, device):
+    if not opt.coarse_grained:
+        classifier_model_files['humanact12'] = classifier_model_files['humanact12_fineG']
     model = torch.load(classifier_model_files[opt.dataset_type])
+    # print(len(opt.label_dec))
     classifier = MotionDiscriminatorForFID(opt.input_size_raw, 128, 2, len(opt.label_dec)).to(device)
     classifier.load_state_dict(model['model'])
     classifier.eval()
