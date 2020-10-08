@@ -9,19 +9,20 @@ from motion_loaders.motion_vae_lie_motion_loader import MotionVAELieGeneratedDat
 from motion_loaders.motion_vae_lie_veloc_motion_loader import MotionVAEVelocGeneratedDataset
 
 
-def get_motion_loader(opt_path, num_motions, batch_size, device, ground_truth_motion_loader=None):
+def get_motion_loader(opt_path, num_motions, batch_size, device, ground_truth_motion_loader=None, label=None):
     opt = get_opt(opt_path, num_motions, device)
 
     if '/vae/' in opt_path:
         if 'veloc' in opt.name:
             print('Generating %s ...' % opt.name)
-            dataset = MotionVAEVelocGeneratedDataset(opt, num_motions, batch_size, device, ground_truth_motion_loader)
+            dataset = MotionVAEVelocGeneratedDataset(opt, num_motions, batch_size, device, ground_truth_motion_loader, label)
         elif 'lie' in opt.name:
             print('Generating %s ...' % opt.name)
-            dataset = MotionVAELieGeneratedDataset(opt, num_motions, batch_size, device, ground_truth_motion_loader)
+            dataset = MotionVAELieGeneratedDataset(opt, num_motions, batch_size, device, ground_truth_motion_loader, label)
         else:
             print('Generating Adversaried Motion VAE Motion...')
-            dataset = MotionVAEGeneratedDataset(opt, num_motions, batch_size, device)
+            # print(label)
+            dataset = MotionVAEGeneratedDataset(opt, num_motions, batch_size, device, label)
     elif '/motion_gan' in opt_path:
         print('Generating Motion GAN Motion...')
         dataset = MotionGanGeneratedDataset(opt, opt.motion_length, opt.input_size_raw, len(opt.label_dec),

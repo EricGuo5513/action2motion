@@ -34,6 +34,7 @@ def calculate_accuracy(motion_loader, num_labels, classifier, device):
             batch_prob, _ = classifier(batch_motion, None)
             batch_pred = batch_prob.max(dim=1).indices
             for label, pred in zip(batch_label, batch_pred):
+                # print(label.data, pred.data)
                 confusion[label][pred] += 1
 
     return confusion
@@ -93,7 +94,7 @@ def calculate_activation_statistics(activations):
 
 def calculate_diversity_multimodality(activations, labels, num_labels):
     print('=== Evaluating Diversity ===')
-    diversity_times = 200
+    diversity_times = 40
     multimodality_times = 20
     labels = labels.long()
     num_motions = len(labels)
@@ -108,28 +109,28 @@ def calculate_diversity_multimodality(activations, labels, num_labels):
 
     print('=== Evaluating Multimodality ===')
     multimodality = 0
-    labal_quotas = np.repeat(multimodality_times, num_labels)
-    while np.any(labal_quotas > 0):
-        # print(labal_quotas)
-        first_idx = np.random.randint(0, num_motions)
-        first_label = labels[first_idx]
-        if not labal_quotas[first_label]:
-            continue
-
-        second_idx = np.random.randint(0, num_motions)
-        second_label = labels[second_idx]
-        while first_label != second_label:
-            second_idx = np.random.randint(0, num_motions)
-            second_label = labels[second_idx]
-
-        labal_quotas[first_label] -= 1
-
-        first_activation = activations[first_idx, :]
-        second_activation = activations[second_idx, :]
-        multimodality += torch.dist(first_activation,
-                                    second_activation)
-
-    multimodality /= (multimodality_times * num_labels)
+    # labal_quotas = np.repeat(multimodality_times, num_labels)
+    # while np.any(labal_quotas > 0):
+    #     # print(labal_quotas)
+    #     first_idx = np.random.randint(0, num_motions)
+    #     first_label = labels[first_idx]
+    #     if not labal_quotas[first_label]:
+    #         continue
+    #
+    #     second_idx = np.random.randint(0, num_motions)
+    #     second_label = labels[second_idx]
+    #     while first_label != second_label:
+    #         second_idx = np.random.randint(0, num_motions)
+    #         second_label = labels[second_idx]
+    #
+    #     labal_quotas[first_label] -= 1
+    #
+    #     first_activation = activations[first_idx, :]
+    #     second_activation = activations[second_idx, :]
+    #     multimodality += torch.dist(first_activation,
+    #                                 second_activation)
+    #
+    # multimodality /= (multimodality_times * num_labels)
 
     return diversity, multimodality
 
@@ -201,11 +202,17 @@ def animation_4_user_study(save_dir, motion_loaders):
 if __name__ == '__main__':
 
     # dataset_opt_path = './checkpoints/vae/ntu_rgbd_vibe/vae_velocS_f0001_t01_trj10_rela/opt.txt'
-    dataset_opt_path = './checkpoints/vae/humanact12/vae_velocR_f0001_t001_trj10_rela_fineG/opt.txt'
+    # dataset_opt_path = './checkpoints/vae/humanact12/vae_velocR_f0001_t001_trj10_rela_fineG/opt.txt'
+    dataset_opt_path = './checkpoints/vae/mocap/vanilla_vae_lie_mse_kld01/opt.txt'
+    label_spe = 3
     eval_motion_loaders = {
-        # 'vae_velocR_f0001_t01_trj10_rela': lambda num_motions, device: get_motion_loader(
-        #     './checkpoints/vae/mocap/vae_velocR_f0001_t01_trj10_rela/opt.txt',
-        #     num_motions, 128, device, ground_truth_motion_loader),
+        'vae_velocR_f0001_t01_trj10_rela': lambda num_motions, device: get_motion_loader(
+            './checkpoints/vae/mocap/vae_velocR_f0001_t01_trj10_rela/opt.txt',
+            num_motions, 128, device, ground_truth_motion_loader, label_spe),
+        'vae_velocS_f0001_t01_trj10_rela': lambda num_motions, device: get_motion_loader(
+            './checkpoints/vae/mocap/vae_velocS_f0001_t01_trj10_rela/opt.txt',
+            num_motions, 128, device, ground_truth_motion_loader, label_spe),
+
         #  'vae_velocS_f0001_t01_trj10_rela': lambda num_motions, device: get_motion_loader(
         #      './checkpoints/vae/ntu_rgbd_vibe/vae_velocS_f0001_t01_trj10_rela_fineG/opt.txt',
         #      num_motions, 128, device, ground_truth_motion_loader),
@@ -215,50 +222,56 @@ if __name__ == '__main__':
         # 'vae_veloc_f0001_t01_optim_seperate_relative': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/humanact13/vae_veloc_f0001_t01_optim_seperate_relative/opt.txt',
         #     num_motions, 128, device, ground_truth_motion_loader),
-        'vae_velocS_f0001_t001_trj10_rela_fineG': lambda num_motions, device: get_motion_loader(
-           './checkpoints/vae/humanact12/vae_velocS_f0001_t001_trj10_rela_fineG/opt.txt',
-           num_motions, 128, device, ground_truth_motion_loader),
-        'vae_velocR_f0001_t001_trj10_rela_fineG': lambda num_motions, device: get_motion_loader(
-        './checkpoints/vae/humanact12/vae_velocR_f0001_t001_trj10_rela_fineG/opt.txt',
-        num_motions, 128, device, ground_truth_motion_loader),
+        # 'vae_velocS_f0001_t001_trj10_rela_fineG': lambda num_motions, device: get_motion_loader(
+        #    './checkpoints/vae/humanact12/vae_velocS_f0001_t001_trj10_rela_fineG/opt.txt',
+        #    num_motions, 128, device, ground_truth_motion_loader),
+        # 'vae_velocR_f0001_t001_trj10_rela_fineG': lambda num_motions, device: get_motion_loader(
+        # './checkpoints/vae/humanact12/vae_velocR_f0001_t001_trj10_rela_fineG/opt.txt',
+        # num_motions, 128, device, ground_truth_motion_loader),
         # 'vanilla_vae_lie_mse_kld01': lambda num_motions, device: get_motion_loader(
         #    './checkpoints/vae/mocap/vanilla_vae_lie_mse_kld01/opt.txt',
         #    num_motions, 36, device, ground_truth_motion_loader),
-        'vanilla_vae_lie_mse_kld001_fineG': lambda num_motions, device: get_motion_loader(
-          './checkpoints/vae/humanact12/vanilla_vae_lie_mse_kld001_fineG/opt.txt',
-          num_motions, 128, device, ground_truth_motion_loader),
-        # 'vanilla_vae_lie_mse_kld001': lambda num_motions, device: get_motion_loader(
-        #     './checkpoints/vae/shihao/vanilla_vae_lie_mse_kld001/opt.txt',
-        #     num_motions, 128, device, ground_truth_motion_loader),
+        # 'vanilla_vae_lie_mse_kld001_fineG': lambda num_motions, device: get_motion_loader(
+        #   './checkpoints/vae/humanact12/vanilla_vae_lie_mse_kld001_fineG/opt.txt',
+        #   num_motions, 128, device, ground_truth_motion_loader),
+        'vanilla_vae_lie_mse_kld01': lambda num_motions, device: get_motion_loader(
+            './checkpoints/vae/mocap/vanilla_vae_lie_mse_kld01/opt.txt',
+            num_motions, 128, device, ground_truth_motion_loader, label_spe),
+
         # 'vanilla_vae_lie_mse_kld01': lambda num_motions, device: get_motion_loader(
         #     './checkpoints/vae/ntu_rgbd_vibe/vanilla_vae_lie_mse_kld01/opt.txt',
         #     num_motions, 128, device, ground_truth_motion_loader),
         #'ground_truth': lambda num_motions, device: get_dataset_motion_loader(
         #    get_opt(dataset_opt_path, num_motions, device), num_motions, device),
         # 'vanila_vae_tf': lambda num_motions, device: get_motion_loader(
-        #     './checkpoints/vae/shihao/vanila_vae_tf/opt.txt',
+        #     './checkpoints/vae/humanact12/vanilla_vae_tf_fineG/opt.txt',
         #     num_motions, 128, device),
-        'motion_gan': lambda num_motions, device: get_motion_loader(
-             './checkpoints/humanact12/motion_gan_fineG/opt.txt',
-             num_motions, 128, device),
-        'conditionedRNN': lambda num_motions, device: get_motion_loader(
-             './model_file/conditionedRNN_act12_opt_fineG.txt',
-             num_motions, 128, device, ground_truth_motion_loader),
-        'deep_completion': lambda num_motions, device: get_motion_loader(
-            './model_file/deep_completion_act12_opt_fineG.txt',
-             num_motions, 128, device),
+        'vanila_vae_tf': lambda num_motions, device: get_motion_loader(
+            './checkpoints/vae/mocap/vanila_vae_tf_2/opt.txt',
+            num_motions, 128, device, label=label_spe),
+
+        # 'motion_gan': lambda num_motions, device: get_motion_loader(
+        #      './checkpoints/humanact12/motion_gan_fineG/opt.txt',
+        #      num_motions, 128, device),
+        # 'conditionedRNN': lambda num_motions, device: get_motion_loader(
+        #      './model_file/conditionedRNN_act12_opt_fineG.txt',
+        #      num_motions, 128, device, ground_truth_motion_loader),
+        # 'deep_completion': lambda num_motions, device: get_motion_loader(
+        #     './model_file/deep_completion_act12_opt_fineG.txt',
+        #      num_motions, 128, device),
     }
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     torch.cuda.set_device(0)
-    num_motions = 2000
+    # num_motions = 2000
+    num_motions = 200
 
     dataset_opt = get_opt(dataset_opt_path, num_motions, device)
     # print(dataset_opt)
     gru_classifier_for_fid = load_classifier_for_fid(dataset_opt, device)
     gru_classifier = load_classifier(dataset_opt, device)
 
-    ground_truth_motion_loader = get_dataset_motion_loader(dataset_opt, num_motions, device)
+    ground_truth_motion_loader = get_dataset_motion_loader(dataset_opt, num_motions, device, label=label_spe)
     motion_loaders = {}
     # motion_loaders['ground_truth'] = ground_truth_motion_loader
     '''
@@ -269,6 +282,6 @@ if __name__ == '__main__':
     animation_4_user_study(save_dir, motion_loaders)
     
     '''
-    log_file = 'final_evaluation_humanact12_veloc_fineG.log'
+    log_file = 'final_evaluation_mocap_veloc_label3_bk.log'
     evaluation(log_file)
 

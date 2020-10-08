@@ -7,7 +7,7 @@ import utils.paramUtil as paramUtil
 
 
 class MotionVAEVelocGeneratedDataset(Dataset):
-    def __init__(self, opt, num_motions, batch_size, device, ground_motion_loader):
+    def __init__(self, opt, num_motions, batch_size, device, ground_motion_loader, label=None):
         if opt.dataset_type == 'ntu_rgbd_vibe':
             raw_offsets = paramUtil.vibe_raw_offsets
             kinematic_chain = paramUtil.vibe_kinematic_chain
@@ -55,6 +55,7 @@ class MotionVAEVelocGeneratedDataset(Dataset):
         self.opt = opt
         self.batch_size = batch_size
         self.ground_motion_loader = ground_motion_loader
+        self.label = label
         self.initiatize(self.opt, self.pool_size, self.batch_size, self.ground_motion_loader)
 
     def initiatize(self, opt, num_motions, batch_size, ground_motion_loader):
@@ -74,8 +75,16 @@ class MotionVAEVelocGeneratedDataset(Dataset):
                 real_joints = torch.cat(real_joints_list, dim=0)
 
                 opt.num_samples = num_motions_batch
+                cate_one_hot = None
+                if self.label is not None:
+                    categories = np.ones(opt.num_samples, dtype=np.int)
+                    categories.fill(self.label)
+                    cate_one_hot, _ = self.trainer.get_cate_one_hot(categories)
                 motions_output_batch, labels_output_batch, _, _ = \
-                    self.trainer.evaluate(self.prior_net, self.decoder, self.veloc_net, opt.num_samples, real_joints=real_joints)
+                    self.trainer.evaluate(self.prior_net, self.decoder, self.veloc_net, opt.num_samples,
+                                          cate_one_hot=cate_one_hot, real_joints=real_joints)
+                if self.label is not None:
+                    labels_output_batch = self.label
                 motions_output[(num_motions-num_motions_batch):num_motions, :, :] = motions_output_batch
                 labels_output[(num_motions-num_motions_batch):num_motions] = labels_output_batch
 

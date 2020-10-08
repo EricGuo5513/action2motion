@@ -825,7 +825,7 @@ class TrainerLieV2(Trainer):
             if cate_one_hot is None:
                 cate_one_hot, classes_to_generate = self.sample_z_cate(num_samples)
             else:
-                classes_to_generate = None
+                classes_to_generate = cate_one_hot.max()
             prior_vec = self.tensor_fill((num_samples, self.opt.pose_dim), 0)
             prior_net.init_hidden(num_samples)
             decoder.init_hidden(num_samples)

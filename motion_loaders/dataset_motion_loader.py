@@ -16,7 +16,7 @@ class Options:
 cached_dataset = {}
 
 
-def get_dataset_motion_dataset(opt):
+def get_dataset_motion_dataset(opt, label=None):
     if opt.opt_path in cached_dataset:
         return cached_dataset[opt.opt_path]
 
@@ -51,7 +51,12 @@ def get_dataset_motion_dataset(opt):
         clip_path = './dataset/mocap/pose_clip.csv'
         mocap_options = Options(False, False, False, 100, True)
         data = dataset.MotionFolderDatasetMocap(clip_path, dataset_path, opt)
-        motion_dataset = dataset.MotionDataset(data, mocap_options)
+        # print(label)
+        if label is None:
+            motion_dataset = dataset.MotionDataset(data, mocap_options)
+        else:
+            motion_dataset = dataset.MotionDataset4One(data, mocap_options, label)
+            # print(len(motion_dataset))
     else:
         raise NotImplementedError('Unrecognized dataset')
 
@@ -59,9 +64,11 @@ def get_dataset_motion_dataset(opt):
     return motion_dataset
 
 
-def get_dataset_motion_loader(opt, num_motions, device):
+
+def get_dataset_motion_loader(opt, num_motions, device, label=None):
     print('Generating Ground Truth Motion...')
-    motion_dataset = get_dataset_motion_dataset(opt)
+    motion_dataset = get_dataset_motion_dataset(opt, label)
+    # print(len(motion_dataset))
     motion_loader = DataLoader(motion_dataset, batch_size=1, num_workers=1,
                                sampler=RandomSampler(motion_dataset, replacement=True, num_samples=num_motions))
 

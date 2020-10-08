@@ -474,6 +474,45 @@ class MotionDataset(data.Dataset):
 
     def __len__(self):
         return len(self.dataset)
+
+class MotionDataset4One(data.Dataset):
+    def __init__(self, dataset, opt, cate_id):
+        self.motion_length = opt.motion_length
+        self.opt = opt
+        self.dataset = []
+        self.label = cate_id
+        for i in range(len(dataset)):
+            motion, label = dataset[i]
+            # print(label, self.label)
+            if self.label == label:
+                self.dataset.append(motion)
+
+    def __getitem__(self, item):
+        motion = self.dataset[item]
+        label = self.label
+        motion = np.array(motion)
+        motion_len = motion.shape[0]
+        # Motion can be of various length, we randomly sample sub-sequence
+        # or repeat the last pose for padding
+
+        # random sample
+        if motion_len >= self.motion_length:
+            gap = motion_len - self.motion_length
+            start = 0 if gap == 0 else np.random.randint(0, gap, 1)[0]
+            end = start + self.motion_length
+            r_motion = motion[start:end]
+            # offset deduction
+            r_motion = r_motion - np.tile(r_motion[0, :3], (1, int(r_motion.shape[-1]/3)))
+        # padding
+        else:
+            gap = self.motion_length - motion_len
+            last_pose = np.expand_dims(motion[-1], axis=0)
+            pad_poses = np.repeat(last_pose, gap, axis=0)
+            r_motion = np.concatenate([motion, pad_poses], axis=0)
+        return r_motion, label
+
+    def __len__(self):
+        return len(self.dataset)
         
 
 class PairFrameDataset(data.Dataset):
