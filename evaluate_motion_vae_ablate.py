@@ -54,8 +54,8 @@ if __name__ == "__main__":
     result_path = os.path.join(opt.result_path, opt.dataset_type, opt.name + opt.name_ext)
 
     if opt.do_interp:
-        path1 = "./eval_results/ablation/humanact12/vae_velocS_f0001_t001_trj10_rela_R1/keypoint/jump18"
-        path2 = "./eval_results/ablation/humanact12/vae_velocS_f0001_t001_trj10_rela/keypoint/jump16"
+        path1 = "./eval_results/ablation/humanact12/vae_velocS_f0001_t001_trj10_rela_R2/keypoint/warm_up0"
+        path2 = "./eval_results/ablation/humanact12/vae_velocS_f0001_t001_trj10_rela/keypoint/warm_up1"
         # path1 = "./eval_results/ablation/humanact13/vae_velocS_f0001_t001_trj10_rela_R1/keypoint/lift_dumbbell25"
         # path2 = "./eval_results/ablation/humanact13/vae_velocS_f0001_t001_trj10_rela/keypoint/lift_dumbbell27"
 

@@ -1303,6 +1303,7 @@ class TrainerLieV3(TrainerLieV2):
 
             latent_list = []
             logvar_list = []
+            mu_list = []
 
             generate_batch = []
             num_joints = int(real_poses.shape[-1] / 3)
@@ -1336,6 +1337,7 @@ class TrainerLieV3(TrainerLieV2):
                 generate_batch.append(pred_joints.unsqueeze(1))
                 latent_list.append(z_t_p.unsqueeze(1))
                 logvar_list.append(logvar_p.unsqueeze(1))
+                mu_list.append(mu_p.unsqueeze(1))
 
         for i in range(1, len(generate_batch)):
             # current location equals to the relative location plus location of previous pose
@@ -1345,7 +1347,8 @@ class TrainerLieV3(TrainerLieV2):
 
         new_latent_batch = torch.cat(latent_list, dim=1)
         logvar_batch = torch.cat(logvar_list, dim=1)
-        return generate_batch.cpu(), classes_to_generate, new_latent_batch.cpu(), logvar_batch.cpu()
+        mu_batch = torch.cat(mu_list, dim=1)
+        return generate_batch.cpu(), classes_to_generate, new_latent_batch.cpu(), logvar_batch.cpu(), mu_batch.cpu()
 
     # For action shift visulization
     # elements in list shift steps must be in ascending order

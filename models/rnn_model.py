@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import random
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1")
 class ConditionedRNN(nn.Module):
     def __init__(self, n_categeories, input_size, hidden_size, output_size):
         super(ConditionedRNN, self).__init__()

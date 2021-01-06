@@ -36,7 +36,7 @@ class ConditionedRNNGeneratedDataset(Dataset):
                     model_output, model_hidden = rnn_generator(
                         model_input, model_hidden, category_tensor
                     )
-                    motion_output[i + 1] = model_output
+                    motion_output[i] = model_output
                     model_input = model_output
 
                 self.motions_output[idx, :, :] = motion_output

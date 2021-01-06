@@ -108,7 +108,7 @@ if __name__ == "__main__":
         motion_mat = motion_mat.reshape(-1, joints_num, 3)
         # motion_mat[:, :, 2] *= -1
 
-
+        np.save(os.path.join(keypoint_path, class_type + str(i) + '.npy'), motion_mat)
         if opt.dataset_type == "shihao":
             pose_tree = paramUtil.smpl_tree
 

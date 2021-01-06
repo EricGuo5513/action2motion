@@ -141,6 +141,7 @@ def plot_3d_pose_v2(savePath, kinematic_tree, joints, title=None):
     ax.set_yticklabels([])
     ax.set_zticklabels([])
     plt.savefig(savePath)
+    plt.close()
 
 '''
 motion: motion data, in dimension of (motion_len, joint_num, 3)
